@@ -1,4 +1,4 @@
-/* plustaker2.c By m@3 2025. */
+/* plustaker2.c By m@3 with Grok 2025. */
 
 #include <stdio.h>
 #include <stdlib.h>
