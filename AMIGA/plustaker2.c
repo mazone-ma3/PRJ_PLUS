@@ -494,11 +494,17 @@ void set_sprite_all(APTR sprite_base_address) {
 			}
 		}
 
-		*((unsigned char *)sprite_base_address + 1 + SPRITE_SIZE * i) =spr_x[i]+ 64 - 16;	// H_START
+		int V_START = spr_y[i] + 44 - 16;
+		int V_STOP = V_START + 16;
+		int H_START = spr_x[i] + 128 - 16;
+		unsigned char *pointer = sprite_base_address  + SPRITE_SIZE * i;
+		*((unsigned char *)pointer + 0) = V_START & 0xff;		// V_START
 
-		*((unsigned char *)sprite_base_address + 0  + SPRITE_SIZE * i) = spr_y[i] + 44 - 16;		// V_START
+		*((unsigned char *)pointer + 1) = (H_START >> 1) & 0xff;	// H_START
 
-		*((unsigned char *)sprite_base_address + 2 + SPRITE_SIZE * i) = spr_y[i] + 16 + 44 - 16;	// V_STOP
+		*((unsigned char *)pointer + 2) = V_STOP & 0xff;	// V_STOP
+
+		*((unsigned char *)pointer + 3) = ((V_STOP & 0x100) << 2) | ((V_START & 0x100) << 1) | (H_START & 0x01);
 	}
 }
 
@@ -606,7 +612,7 @@ int main(void)
 		Custom.color[i] = org_pal[i][2] / 1 | ((org_pal[i][1]/1) << 4) | ((org_pal[i][0]/1) << 8);
 
 	for(i = 0; i < 8; ++i)
-		set_sprite(i, i * 8 + 16, i * 16 + 16);
+		set_sprite(i, i * 16 + 16, i * 16 + 16);
 	set_sprite_all(sprite_address);
 	Custom.dmacon = DMAF_SETCLR | DMAF_SPRITE;
 
@@ -623,168 +629,180 @@ int main(void)
 	sc5_load("RAINCHR5.SC5", 0, 0, 16*3, (ULONG)bitplane_address); //212);
 
 	for(;;){
-Entity player = {100, 160};
-Entity bullets[3] = {{0}};
-Entity enemies[4] = {{0}};
-Entity pluses[8] = {{0}};  // Plus最大8個
+		Entity player = {100, 160};
+		Entity bullets[3] = {{0}};
+		Entity enemies[4] = {{0}};
+		Entity pluses[8] = {{0}};  // Plus最大8個
 
-int score = 0;
-int combo = 0;
-int spawn_timer = 0;
-int combo_timer = 0;
-int wave = 1;
-int enemies_killed_this_wave = 0;
-int game_over = 0;
+		int score = 0;
+		int combo = 0;
+		int spawn_timer = 0;
+		int combo_timer = 0;
+		int wave = 1;
+		int enemies_killed_this_wave = 0;
+		int game_over = 0;
 
-int count = 0;
-	while (!game_over) {
-		++count;
-		ULONG joy =ReadJoyPort(1);
+		int count = 0;
+		while (!game_over) {
+			++count;
+			ULONG joy =ReadJoyPort(1);
 
-		// 移動 (仮にキーボードor joy direct)
-		if (joy & JPF_JOY_UP) player.y -= 3;  // up
-		if (joy & JPF_JOY_DOWN) player.y += 3;  // down
-		if (joy & JPF_JOY_LEFT) player.x -= 3;  // left
-		if (joy & JPF_JOY_RIGHT) player.x += 3;  // right
+			// 移動 (仮にキーボードor joy direct)
+			if (joy & JPF_JOY_UP) player.y -= 3;  // up
+			if (joy & JPF_JOY_DOWN) player.y += 3;  // down
+			if (joy & JPF_JOY_LEFT) player.x -= 3;  // left
+			if (joy & JPF_JOY_RIGHT) player.x += 3;  // right
 
-		player.x = MAX(16, MIN(((SCREEN_WIDTH + 16) / 2), player.x));
-		player.y = MAX(16, MIN(((SCREEN_HEIGHT)), player.y));
+			player.x = MAX(16, MIN(((SCREEN_WIDTH)), player.x));
+			player.y = MAX(16, MIN(((SCREEN_HEIGHT)), player.y));
 
-		set_sprite(0, player.x, player.y);
+			set_sprite(0, player.x, player.y);
 
-		// 射撃 (ボタン押したら弾発射)
-		if (joy & JPF_BTN1) {  // adjust bit
-			for (int i = 0; i < 3; i++) {
-				if (!bullets[i].active) {
-					bullets[i].active = 1;
-					bullets[i].x = player.x;
-					bullets[i].y = player.y;// - 16;
-					break;
+			// 射撃 (ボタン押したら弾発射)
+			if (joy & JPF_BTN1) {  // adjust bit
+				for (int i = 0; i < 3; i++) {
+					if (!bullets[i].active) {
+						bullets[i].active = 1;
+						bullets[i].x = player.x;
+						bullets[i].y = player.y;// - 16;
+						break;
+					}
 				}
 			}
-		}
 
-		// 弾更新
-		for (int i = 0; i < 3; i++) {
-			if (bullets[i].active) {
-				bullets[i].y -= 8;
-				if (bullets[i].y < 0) bullets[i].active = 0;
-				set_sprite(i+1, bullets[i].x, bullets[i].y);
-			} else {
-				set_sprite(i+1, 0, 0);  // hide
+			// 弾更新
+			for (int i = 0; i < 3; i++) {
+				if (bullets[i].active) {
+					bullets[i].y -= 8;
+					if (bullets[i].y < 0) bullets[i].active = 0;
+					set_sprite(i+1, bullets[i].x, bullets[i].y);
+				} else {
+					set_sprite(i+1, 0, 0);  // hide
+				}
 			}
-		}
 
 		// 敵スポーン&更新
-		if (++spawn_timer > 10) {
-			spawn_timer = 0;
-			for (int i = 0; i < 4; i++) {
-				if (!enemies[i].active) {
-					enemies[i].active = 1;
-					enemies[i].x = 16 + ((rand() & ((SCREEN_WIDTH - 16) * 4 / 5 + 1)) * 5 / 4) / 2;
-					enemies[i].y = 0;
-					break;
+			if (++spawn_timer > 10) {
+				spawn_timer = 0;
+				for (int i = 0; i < 4; i++) {
+					if (!enemies[i].active) {
+						enemies[i].active = 1;
+						enemies[i].x = 16 + ((rand() & ((SCREEN_WIDTH - 16) * 4 / 5 + 1)) * 5 / 4);
+						enemies[i].y = 0;
+						break;
+					}
 				}
 			}
-		}
 
-		for (int i = 0; i < 4; i++) {
-			if (enemies[i].active) {
-				if (!pluses[i].active) {
-					set_sprite_pattern(i+4, 2);
-					enemies[i].y += 2;
-					if (enemies[i].y > (SCREEN_HEIGHT + 16)) enemies[i].active = 0;
-					set_sprite(i+4, enemies[i].x, enemies[i].y);
-				} else {
+			for (int i = 0; i < 4; i++) {
+				if (enemies[i].active) {
+					if (!pluses[i].active) {
+						set_sprite_pattern(i+4, 2);
+						enemies[i].y += 2;
+						if (enemies[i].y > (SCREEN_HEIGHT + 16)) enemies[i].active = 0;
+						set_sprite(i+4, enemies[i].x, enemies[i].y);
+					} else {
+						set_sprite(i+4, 0, 0);
+					}
+				}else{
 					set_sprite(i+4, 0, 0);
 				}
-			}else{
-				set_sprite(i+4, 0, 0);
 			}
-		}
 
-		// 衝突判定: 弾 vs 敵
-		for (int b = 0; b < 3; b++) {
-			if (!bullets[b].active) continue;
-			for (int e = 0; e < 4; e++) {
-				if (pluses[e].active) continue;
-				if (!enemies[e].active) continue;
-				if (abs(bullets[b].x - enemies[e].x) < 16 && abs(bullets[b].y - enemies[e].y) < 16) {
-					bullets[b].active = 0;
-//					enemies[e].active = 0;
-					set_sprite(b+1, 0, 0);
-					set_sprite(e+4, 0, 0);
+			// 衝突判定: 弾 vs 敵
+			for (int b = 0; b < 3; b++) {
+				if (!bullets[b].active) continue;
+				for (int e = 0; e < 4; e++) {
+					if (pluses[e].active) continue;
+					if (!enemies[e].active) continue;
+					if (abs(bullets[b].x - enemies[e].x) < 16 && abs(bullets[b].y - enemies[e].y) < 16) {
+						bullets[b].active = 0;
+//						enemies[e].active = 0;
+						set_sprite(b+1, 0, 0);
+						set_sprite(e+4, 0, 0);
 
-					// Plus生成
-//					for (int p = 0; p < 1; p++) {
-//						if (!pluses[e].active) {
-							pluses[e].active = 1;
-							pluses[e].x = enemies[e].x;
-							pluses[e].y = enemies[e].y;
-//							break;
+						// Plus生成
+//						for (int p = 0; p < 1; p++) {
+//							if (!pluses[e].active) {
+								pluses[e].active = 1;
+								pluses[e].x = enemies[e].x;
+								pluses[e].y = enemies[e].y;
+//								break;
+//							}
 //						}
-//					}
 
-					combo++;
-					combo_timer = 0;
-					score += 20 * combo;
-					enemies_killed_this_wave++;
+						combo++;
+						combo_timer = 0;
+						score += 20 * combo;
+						enemies_killed_this_wave++;
 
-					// WAVEクリア判定
-					if (enemies_killed_this_wave >= 5 * wave) {
-						wave++;
-						enemies_killed_this_wave = 0;
+						// WAVEクリア判定
+						if (enemies_killed_this_wave >= 5 * wave) {
+							wave++;
+							enemies_killed_this_wave = 0;
+						}
+						break;
 					}
-					break;
 				}
 			}
-		}
 
-		// Plus取得
-		for (int p = 0; p < 4; p++) {
-			if (pluses[p].active) {
-				set_sprite_pattern(p+4, 0);
-				pluses[p].y += 1;
-				if (abs(pluses[p].x - player.x) < 16 && abs(pluses[p].y - player.y) < 16) {
-					pluses[p].active = 0;
-					enemies[p].active = 0;
-					score += 50 * combo;
-					combo_timer = 0;
-				}else{
-					set_sprite(p+4, pluses[p].x, pluses[p].y);
-					if (pluses[p].y > (SCREEN_HEIGHT + 16)){
+			// Plus取得
+			for (int p = 0; p < 4; p++) {
+				if (pluses[p].active) {
+					set_sprite_pattern(p+4, 0);
+					pluses[p].y += 1;
+					if (abs(pluses[p].x - player.x) < 16 && abs(pluses[p].y - player.y) < 16) {
 						pluses[p].active = 0;
 						enemies[p].active = 0;
+						score += 50 * combo;
+						combo_timer = 0;
+					}else{
+						set_sprite(p+4, pluses[p].x, pluses[p].y);
+						if (pluses[p].y > (SCREEN_HEIGHT + 16)){
+							pluses[p].active = 0;
+							enemies[p].active = 0;
+						}
 					}
 				}
 			}
-		}
 
-		// コンボ切れ
-		if (combo_timer > 60) {
-			combo = 0;
-		}
-
-		// ゲームオーバー (敵接触)
-		for (int e = 0; e < 4; e++) {
-			if (enemies[e].active && abs(enemies[e].x - player.x) < 20 && abs(enemies[e].y - player.y) < 20) {
-				game_over = 1;
+			// コンボ切れ
+			if (combo_timer > 60) {
+				combo = 0;
 			}
-		}
-//		while(((Custom.vhposr / 256))); // == 0x20));
-		WaitTOF();
-		set_sprite_all(sprite_address);
 
-//		*((unsigned char *)0x25001) = player.x;	// H_START
-//		*((unsigned char *)0x25000) = player.y;		// V_START
-//		*((unsigned char *)0x25002) = player.y + 16;	// V_STOP
+			// ゲームオーバー (敵接触)
+			for (int e = 0; e < 4; e++) {
+				if (enemies[e].active && abs(enemies[e].x - player.x) < 16 && abs(enemies[e].y - player.y) < 16) {
+					game_over = 1;
+				}
+			}
+//			while(((Custom.vhposr / 256))); // == 0x20));
+			WaitTOF();
+			set_sprite_all(sprite_address);
+
+//			*((unsigned char *)0x25001) = player.x;	// H_START
+//			*((unsigned char *)0x25000) = player.y;		// V_START
+//			*((unsigned char *)0x25002) = player.y + 16;	// V_STOP
+		}
+		for(;;){
+			ULONG joy = ReadJoyPort(1);
+			if(!(joy & JPF_BTN1))
+				break;
+		}
+		// ゲームオーバー画面
+		/* ここにテキスト描画追加可能 */
+		for(;;){
+			ULONG joy = ReadJoyPort(1);
+			if(joy & JPF_BTN1)
+				break;
+		}
+		// (スプライト全消し)
+		for (int i = 0; i < 8; i++){
+			set_sprite(i, 0, 0);
+			set_sprite_all(sprite_address);
+		}
 	}
-// ゲームオーバー画面 (スプライト全消し)
-	for (int i = 0; i < 8; i++)
-		set_sprite(i, 0, 0);
-		set_sprite_all(sprite_address);
-	}
-	// ここにテキスト描画追加可能
 
 	FreeMem(bitplane_address, BITPLANE_SIZE * BITPLANE_NUM);
 	FreeMem(sprite_address, SPRITE_SIZE * SPRITE_NUM);
