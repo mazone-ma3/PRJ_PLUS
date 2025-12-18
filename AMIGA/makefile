@@ -1,5 +1,7 @@
 # plustaker2 makefile for AMIGA OS GCC
 
+TARGET = plustakeramg
+
 LIBPATH = c:\amiga-gcc/m68k-amigaos/lib/
 
 #É}ÉNÉç
@@ -20,12 +22,13 @@ LINKOPTS = -Os -noixemul
 
 all:plustaker2
 
-OBJFILES = plustaker2.o
-# rainchr5.o
+clean:
+	rm $(TARGET) $(TARGET).o
+
+OBJFILES = $(TARGET).o
 
 plustaker2 : $(OBJFILES)
-	$(CC) $(LINKOPTS) $(OBJFILES) -o plustaker2 -lamiga
-	adf.bat plustaker2 RAINCHR5.SC5
+	$(CC) $(LINKOPTS) $(OBJFILES) -o $(TARGET) -lamiga
+	adf.bat $(TARGET) RAINCHR5.SC5 FONTYOKO.SC5
 
-plustaker2.o : plustaker2.c
-#rainchr5.o : rainchr5.c
+$(TARGET) : $(TARGET).c
