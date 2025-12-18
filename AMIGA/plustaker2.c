@@ -504,7 +504,7 @@ void set_sprite_all(APTR sprite_base_address) {
 
 		*((unsigned char *)pointer + 2) = V_STOP & 0xff;	// V_STOP
 
-		*((unsigned char *)pointer + 3) = ((V_STOP & 0x100) << 2) | ((V_START & 0x100) << 1) | (H_START & 0x01);
+		*((unsigned char *)pointer + 3) = 0x80 * 0 | ((V_STOP & 0x100) << 2) | ((V_START & 0x100) << 1) | (H_START & 0x01);
 	}
 }
 
@@ -604,9 +604,9 @@ int main(void)
 
 	/* pallet */
 	for(i = 0; i < 16; i+=4){
-		Custom.color[17 + i] = 0xff0;//0x0ff0;
-		Custom.color[18 + i] = 0xf00;//0x00ff;
-		Custom.color[19+i] = 0xfff;//0x0f0f;
+		Custom.color[17 + i] = 0xff0;//0x0ff0;	/* SPR-0 Yellow */
+		Custom.color[18 + i] = 0xf00;//0x00ff;	/* SPR-1 Red */
+		Custom.color[19 + i] = 0xfff;//0x0f0f;	/* SPR-2 White */
 	}
 	for(i = 0; i < 16; ++i)
 		Custom.color[i] = org_pal[i][2] / 1 | ((org_pal[i][1]/1) << 4) | ((org_pal[i][0]/1) << 8);
