@@ -21,9 +21,11 @@ LINKOPTS = -Os -noixemul
 all:plustaker2
 
 OBJFILES = plustaker2.o
+# rainchr5.o
 
 plustaker2 : $(OBJFILES)
 	$(CC) $(LINKOPTS) $(OBJFILES) -o plustaker2 -lamiga
 	adf.bat plustaker2 RAINCHR5.SC5
 
 plustaker2.o : plustaker2.c
+#rainchr5.o : rainchr5.c

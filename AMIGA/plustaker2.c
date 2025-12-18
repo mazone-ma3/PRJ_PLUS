@@ -48,6 +48,11 @@
 #define bplpt 0x0e0
 #define sprpt2 0x120
 
+#define BITPLANE_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT / 8) //0x4000
+#define BITPLANE_NUM 4
+#define SPRITE_SIZE 0x100
+#define SPRITE_NUM 8
+
 enum {
 	BPL1PTH = bplpt + 0x00,
 	BPL1PTL = bplpt + 0x02,
@@ -94,11 +99,27 @@ enum {
 	SPR7PTL = SPR7PT + 0x02,
 };
 
+enum {
+	BITPLANE1,
+	BITPLANE2,
+	BITPLANE3,
+	BITPLANE4,
+	SPR0,
+	SPR1,
+	SPR2,
+	SPR3,
+	SPR4,
+	SPR5,
+	SPR6,
+	SPR7
+};
+
+
 unsigned short COPPERL[] = {
 	BPL1PTH,0x0002, //;Bitplane 1 pointer = $22000
 	BPL1PTL,0x2000,
 
-	BPL2PTH,0x0002, //;Bitplane 2 pointer = $28000
+	BPL2PTH,0x0002, //;Bitplane 2 pointer = $26000
 	BPL2PTL,0x6000,
 
 	BPL3PTH,0x0002, //;Bitplane 3 pointer = $2a000
@@ -248,6 +269,7 @@ unsigned short SPRITE3[] = {
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
 
+/*
 // シンプルスプライトデータ (16x16, 2色)
 // プレイヤー船 (sprite0)
 UWORD player_sprite[] = {
@@ -306,13 +328,14 @@ UWORD enemy_sprite[] = {
 	0x0000, 0x0000,
 	0x0000, 0x0000
 };
+*/
 
 // 構造体
 typedef struct {
 	int x, y;
 	int active;
 } Entity;
-
+/*
 Entity player = {120, 160};
 Entity bullets[3] = {{0}};
 Entity enemies[4] = {{0}};
@@ -325,7 +348,7 @@ int combo_timer = 0;
 int wave = 1;
 int enemies_killed_this_wave = 0;
 int game_over = 0;
-
+*/
 unsigned char org_pal[16][3] = {
 	{  0,  0,  0},
 	{  0,  0,  0},
@@ -358,7 +381,7 @@ BPTR stream[1];
 
 unsigned char conv_tbl[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 , 15};
 
-short sc5_load(char *loadfil, short x, short y, short msxline)
+short sc5_load(char *loadfil, short x, short y, short msxline, ULONG bitplane_address)
 {
 	long i, j, count, count2;
 	int k=0, l=0, m=0;
@@ -366,9 +389,9 @@ short sc5_load(char *loadfil, short x, short y, short msxline)
 	unsigned short amgcolor[4];
 	unsigned char msxcolor[8];
 	unsigned char color;
-	unsigned short vram_adr;
+	ULONG vram_adr;
 
-	if ((stream[0] = Open( loadfil, MODE_READWRITE)) == NULL) {
+	if (!(stream[0] = Open( loadfil, MODE_READWRITE))) {
 //		printf("Can\'t open file %s.", loadfil);
 
 		Close(stream[0]);
@@ -412,11 +435,11 @@ short sc5_load(char *loadfil, short x, short y, short msxline)
 		for(i = 0; i < 4; ++i){
 			pattern[i] = amgcolor[i];
 		}
-		vram_adr = k + l + (x + y * 32); //); // * 2;
-		*((unsigned char *)(vram_adr + 0x22000L)) = pattern[0];
-		*((unsigned char *)(vram_adr + 0x26000L)) = pattern[1];
-		*((unsigned char *)(vram_adr + 0x2a000L)) = pattern[2];
-		*((unsigned char *)(vram_adr + 0x2e000L)) = pattern[3];
+		vram_adr = k + l + (x + y * 32) + bitplane_address; //); // * 2;
+		*((unsigned char *)(vram_adr + BITPLANE_SIZE * 0)) = pattern[0];
+		*((unsigned char *)(vram_adr + BITPLANE_SIZE * 1)) = pattern[1];
+		*((unsigned char *)(vram_adr + BITPLANE_SIZE * 2)) = pattern[2];
+		*((unsigned char *)(vram_adr + BITPLANE_SIZE * 3)) = pattern[3];
 
 		k += 1;
 		if(k >= (32)){
@@ -437,7 +460,7 @@ void set_sprite(int num, int posx, int posy) {
 	spr_y[num] = posy;
 }
 
-void set_sprite_all(void) {
+void set_sprite_all(APTR sprite_base_address) {
 	int no;
 	unsigned long *pointer, *pointer2;
 //	Custom.spr[num].pos = (posy << 8) | (posx & 0xff);
@@ -448,7 +471,7 @@ void set_sprite_all(void) {
 		if((no = sprite_pattern_no[i]) != old_sprite_pattern_no[i]){
 			old_sprite_pattern_no[i] = no;
 
-			pointer = (unsigned long *)((unsigned char *)0x21000L + 0x100 * i);
+			pointer = (unsigned long *)((unsigned char *)sprite_base_address + 0x100 * i);
 //			sprite_pattern_no[i] = no;
 			switch(no){
 				case 0:
@@ -471,27 +494,43 @@ void set_sprite_all(void) {
 			}
 		}
 
-		*((unsigned char *)0x21001 + 0x100 * i) =spr_x[i]+ 64 - 16;	// H_START
+		*((unsigned char *)sprite_base_address + 1 + SPRITE_SIZE * i) =spr_x[i]+ 64 - 16;	// H_START
 
-		*((unsigned char *)0x21000 + 0x100 * i) = spr_y[i] + 44 - 16;		// V_START
+		*((unsigned char *)sprite_base_address + 0  + SPRITE_SIZE * i) = spr_y[i] + 44 - 16;		// V_START
 
-		*((unsigned char *)0x21002 + 0x100 * i) = spr_y[i] + 16 + 44 - 16;	// V_STOP
+		*((unsigned char *)sprite_base_address + 2 + SPRITE_SIZE * i) = spr_y[i] + 16 + 44 - 16;	// V_STOP
 	}
 }
-
 
 void set_sprite_pattern(int num, int no) {
 	sprite_pattern_no[num] = no;
 }
 
-void set_sprite_pattern_all(int num, int no) {
+void set_copperl(ULONG bitplane_address, ULONG sprite_address)
+{
+	for(int i = 0 ; i < BITPLANE_NUM; ++i){
+		COPPERL[(BITPLANE1 + i) * 4 + 1] = ((bitplane_address >> 16) & 0xffff); //0x0002;
+		COPPERL[(BITPLANE1 + i) * 4 + 3] = (bitplane_address & 0xffff) + BITPLANE_SIZE * i;
+	}
 
+	for(int i = 0 ; i < SPRITE_NUM; ++i){
+		COPPERL[(SPR0 + i) * 4 + 1] = ((sprite_address >> 16) & 0xffff); //0x0002;
+		COPPERL[(SPR0 + i) * 4 + 3] = (sprite_address & 0xffff) + SPRITE_SIZE * i;
+	}
 }
 
 int main(void)
 {
 	long i = 0;
 	unsigned long *pointer, *pointer2;
+
+//	APTR base_address = 0x00020000L;
+//	APTR sprite_address = 0x00021000L;
+//	APTR bitplane_address = 0x00022000L;
+
+	APTR base_address = AllocMem((BITPLANE_NUM + SPRITE_NUM + 1) * 8, MEMF_CHIP | MEMF_CLEAR);
+	APTR sprite_address = AllocMem( SPRITE_SIZE * SPRITE_NUM, MEMF_CHIP | MEMF_CLEAR );
+	APTR bitplane_address = AllocMem(BITPLANE_SIZE * BITPLANE_NUM, MEMF_CHIP | MEMF_CLEAR);
 
 	struct Library *LowLevelBase = OpenLibrary("lowlevel.library", 39L);
 	if (!LowLevelBase) {
@@ -515,22 +554,22 @@ int main(void)
 	Custom.diwstrt = 0x2c81;
 	Custom.diwstop = 0xf4c1;
 
-
-	// set sprite
-	pointer = (unsigned long *)0x20000L;
+	// set vram & sprite
+	set_copperl((ULONG)bitplane_address, (ULONG)sprite_address);
+	pointer = (unsigned long *)base_address; //0x20000L;
 	pointer2 = (unsigned long *)COPPERL;
 
 	do{
 		*(pointer++) = *(pointer2++);
 	}while(*pointer2 != 0xfffffffe);
 
-	for(i = 0; i < 8; ++i)
-		*((unsigned long *)((unsigned char *)0x21000L + 0x100 * i)) = 0;
+//	for(i = 0; i < 8; ++i)
+//		*((unsigned long *)((unsigned char *)0x21000L + 0x100 * i)) = 0;
 
 
 	for(i = 0; i < 8; ++i){
 		old_sprite_pattern_no[i] = 255;
-		pointer = (unsigned long *)((unsigned char *)0x21000L + 0x100 * i);
+		pointer = (unsigned long *)((unsigned char *)sprite_address + 0x100 * i);
 		switch(i){
 			case 0:
 				set_sprite_pattern(i, 0);
@@ -553,7 +592,7 @@ int main(void)
 
 
 	/* COPPERLへのポインタセット */
-	Custom.cop1lc = 0x20000L; //MOVE.L  #$20000,COP1LC(a0)
+	Custom.cop1lc = (ULONG)base_address; //0x20000L; //MOVE.L  #$20000,COP1LC(a0)
 	Custom.copjmp1 = 0;
 	Custom.dmacon = 0x83a0;
 
@@ -568,23 +607,38 @@ int main(void)
 
 	for(i = 0; i < 8; ++i)
 		set_sprite(i, i * 8 + 16, i * 16 + 16);
-	set_sprite_all();
+	set_sprite_all(sprite_address);
 	Custom.dmacon = DMAF_SETCLR | DMAF_SPRITE;
 
 	// 画面クリア
-	pointer = (unsigned long *)0x22000L;
-	i = SCREEN_WIDTH * SCREEN_HEIGHT / 8 - 4;
+//	pointer = (unsigned long *)bitplane_address; //0x22000L;
+	i = BITPLANE_SIZE - 4; //SCREEN_WIDTH * SCREEN_HEIGHT / 8 - 4;
 	do{
-		*(unsigned long *)((unsigned char *)(i + 0x22000L)) = 0;
-		*(unsigned long *)((unsigned char *)(i + 0x26000L)) = 0xffffffffL;
-		*(unsigned long *)((unsigned char *)(i + 0x2a000L)) = 0;
-		*(unsigned long *)((unsigned char *)(i + 0x2e000L)) = 0;
+		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 0)) = 0;
+		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 1)) = 0xffffffffL;
+		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 2)) = 0;
+		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 3)) = 0;
 	}while((i-=4) >= 0);
 
-	sc5_load("RAINCHR5.SC5", 0, 0, 16*3); //212);
+	sc5_load("RAINCHR5.SC5", 0, 0, 16*3, (ULONG)bitplane_address); //212);
 
 	for(;;){
-//	while (!game_over) {
+Entity player = {100, 160};
+Entity bullets[3] = {{0}};
+Entity enemies[4] = {{0}};
+Entity pluses[8] = {{0}};  // Plus最大8個
+
+int score = 0;
+int combo = 0;
+int spawn_timer = 0;
+int combo_timer = 0;
+int wave = 1;
+int enemies_killed_this_wave = 0;
+int game_over = 0;
+
+int count = 0;
+	while (!game_over) {
+		++count;
 		ULONG joy =ReadJoyPort(1);
 
 		// 移動 (仮にキーボードor joy direct)
@@ -604,7 +658,7 @@ int main(void)
 				if (!bullets[i].active) {
 					bullets[i].active = 1;
 					bullets[i].x = player.x;
-					bullets[i].y = player.y - 16;
+					bullets[i].y = player.y;// - 16;
 					break;
 				}
 			}
@@ -627,7 +681,7 @@ int main(void)
 			for (int i = 0; i < 4; i++) {
 				if (!enemies[i].active) {
 					enemies[i].active = 1;
-					enemies[i].x = 32/2 + (i*64)/2;
+					enemies[i].x = 16 + ((rand() & ((SCREEN_WIDTH - 16) * 4 / 5 + 1)) * 5 / 4) / 2;
 					enemies[i].y = 0;
 					break;
 				}
@@ -719,18 +773,23 @@ int main(void)
 		}
 //		while(((Custom.vhposr / 256))); // == 0x20));
 		WaitTOF();
-		set_sprite_all();
+		set_sprite_all(sprite_address);
 
 //		*((unsigned char *)0x25001) = player.x;	// H_START
 //		*((unsigned char *)0x25000) = player.y;		// V_START
 //		*((unsigned char *)0x25002) = player.y + 16;	// V_STOP
 	}
-	// ゲームオーバー画面 (スプライト全消し)
-//	for (int i = 0; i < 8; i++)
-//		set_sprite(i, player_sprite, 0, 0);
-
+// ゲームオーバー画面 (スプライト全消し)
+	for (int i = 0; i < 8; i++)
+		set_sprite(i, 0, 0);
+		set_sprite_all(sprite_address);
+	}
 	// ここにテキスト描画追加可能
-//	}
+
+	FreeMem(bitplane_address, BITPLANE_SIZE * BITPLANE_NUM);
+	FreeMem(sprite_address, SPRITE_SIZE * SPRITE_NUM);
+	FreeMem(base_address, (BITPLANE_NUM + SPRITE_NUM + 1) * 8);
+
 	return(0);
 }
 
