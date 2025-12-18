@@ -629,7 +629,7 @@ int main(void)
 	sc5_load("RAINCHR5.SC5", 0, 0, 16*3, (ULONG)bitplane_address); //212);
 
 	for(;;){
-		Entity player = {100, 160};
+		Entity player = {160, 160-16};
 		Entity bullets[3] = {{0}};
 		Entity enemies[4] = {{0}};
 		Entity pluses[8] = {{0}};  // PlusÅ‘å8ŒÂ

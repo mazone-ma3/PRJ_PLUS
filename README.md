@@ -4,3 +4,7 @@
 ・AMIGA版
 
 AMIGA OS GCCでコンパイルしてください。gadfも必要です。
+
+・C64版
+
+llvm-cmosでコンパイルしてください。
