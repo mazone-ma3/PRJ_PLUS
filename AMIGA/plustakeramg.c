@@ -343,7 +343,7 @@ Entity bullets[3] = {{0}};
 Entity enemies[4] = {{0}};
 Entity pluses[8] = {{0}};  // PlusÅ‘å8ŒÂ
 */
-int score = 0, hiscore = 0;
+int score = 0, hiscore = 5000;
 int combo = 0;
 /*
 int spawn_timer = 0;
@@ -576,18 +576,18 @@ void score_display(ULONG bitplane_address)
 	put_numd(score, 8);
 	put_strings(SCREEN2, 15, 22 , str_temp, CHRPAL_NO, bitplane_address);
 	if(score >= hiscore){
-/*		if((score % 10) == 0){
+		if((get_mod10(score)) == 0){
 			hiscore = score;
 			put_strings(SCREEN2, 8, 22, "HIGH ", CHRPAL_NO, bitplane_address);
-		}*/
+		}
 	}
-//	else
-//		put_strings(SCREEN2, 8, 22, "SCORE", CHRPAL_NO, bitplane_address);
+	else
+		put_strings(SCREEN2, 8, 22, "SCORE", CHRPAL_NO, bitplane_address);
 }
 
 void score_displayall(ULONG bitplane_address)
 {
-	put_strings(SCREEN2, 9, 22, "SCORE", CHRPAL_NO, bitplane_address);
+//	put_strings(SCREEN2, 9, 22, "SCORE", CHRPAL_NO, bitplane_address);
 	score_display(bitplane_address);
 }
 
