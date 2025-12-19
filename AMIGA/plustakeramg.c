@@ -458,6 +458,7 @@ short sc5_load(char *loadfil, short x, short y, short msxline, ULONG bitplane_ad
 int sprite_pattern_no[8], old_sprite_pattern_no[8], spr_x[8], spr_y[8];
 //unsigned char font_buffer[SCREEN_WIDTH / 8][8 * 4][BITPLANE_NUM];
 unsigned char font_buffer[BITPLANE_NUM][8*4][SCREEN_WIDTH / 8];
+unsigned char bg_buffer[BITPLANE_NUM][16*3][SCREEN_WIDTH / 8];
 
 char chr;
 unsigned char str_temp[11];
@@ -762,9 +763,9 @@ int main(void)
 	for(i = 0; i < 16; ++i)
 		Custom.color[i] = org_pal[i][2] / 1 | ((org_pal[i][1]/1) << 4) | ((org_pal[i][0]/1) << 8);
 
-	for(i = 0; i < 8; ++i)
-		set_sprite(i, i * 16 + 16, i * 16 + 16);
-	set_sprite_all(sprite_address);
+//	for(i = 0; i < 8; ++i)
+//		set_sprite(i, i * 16 + 16, i * 16 + 16);
+//	set_sprite_all(sprite_address);
 	Custom.dmacon = DMAF_SETCLR | DMAF_SPRITE;
 
 	// ‰æ–ÊƒNƒŠƒA
@@ -778,6 +779,7 @@ int main(void)
 	}while((i-=4) >= 0);
 
 //	sc5_load("RAINCHR5.SC5", 0, 0, 16*3, (ULONG)bitplane_address, BITPLANE_SIZE); //212);
+	sc5_load("RAINCHR5.SC5", 0, 0, 16*3, (ULONG)&bg_buffer[0][0][0], (SCREEN_WIDTH / 8 * 16 * 3)); //bitplane_address); //212);
 //	sc5_load("FONTYOKO.SC5", 0, 0, 8*4, (ULONG)bitplane_address, BITPLANE_SIZE); //212);
 	sc5_load("FONTYOKO.SC5", 0, 0, 8*4, (ULONG)&font_buffer[0][0][0], (SCREEN_WIDTH / 8 * 8 * 4)); //bitplane_address); //212);
 
@@ -794,6 +796,18 @@ int main(void)
 			}
 		}
 	}*/
+
+	ULONG vram_adr;
+	int x = 0,y = 18 * 8;
+	for(int k = 0; k < SCREEN_WIDTH / 8; ++k){
+		for(int j = 0; j < 16; ++j){
+			vram_adr = (x + k) + (y + j) * (SCREEN_WIDTH / 8) + (ULONG)bitplane_address;
+			for(i = 0; i < BITPLANE_NUM; ++i){
+				*((unsigned char *)(vram_adr + BITPLANE_SIZE * i)) = 
+					bg_buffer[i][j][128 / 8];
+			}
+		}
+	}
 
 	for(;;){
 		Entity player = {160, 160-16};
