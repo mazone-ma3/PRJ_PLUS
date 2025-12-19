@@ -28,7 +28,8 @@ clean:
 OBJFILES = $(TARGET).o
 
 plustaker2 : $(OBJFILES)
-	$(CC) $(LINKOPTS) $(OBJFILES) -o $(TARGET) -lamiga
+	$(CC) $(LINKOPTS) $(OBJFILES) -o $(TARGET)
+# -lamiga
 	adf.bat $(TARGET) RAINCHR5.SC5 FONTYOKO.SC5
 
 $(TARGET) : $(TARGET).c

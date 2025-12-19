@@ -1,5 +1,10 @@
 /* plustaker2.c By m@3 with Grok 2025. */
 
+#define SCREEN_WIDTH (320)
+#define SCREEN_HEIGHT (200)
+ // PAL
+#define BITPLANE_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT / 8)
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -48,7 +53,7 @@
 #define bplpt 0x0e0
 #define sprpt2 0x120
 
-#define BITPLANE_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT / 8) //0x4000
+ //0x4000
 #define BITPLANE_NUM 4
 #define SPRITE_SIZE 0x100
 #define SPRITE_NUM 8
@@ -262,9 +267,6 @@ unsigned short SPRITE3[] = {
 };
 
 
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 200 // PAL
-
 // max/min マクロ
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
@@ -340,9 +342,10 @@ Entity player = {120, 160};
 Entity bullets[3] = {{0}};
 Entity enemies[4] = {{0}};
 Entity pluses[8] = {{0}};  // Plus最大8個
-
-int score = 0;
+*/
+int score = 0, hiscore = 0;
 int combo = 0;
+/*
 int spawn_timer = 0;
 int combo_timer = 0;
 int wave = 1;
@@ -381,7 +384,7 @@ BPTR stream[1];
 
 unsigned char conv_tbl[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 , 15};
 
-short sc5_load(char *loadfil, short x, short y, short msxline, ULONG bitplane_address)
+short sc5_load(char *loadfil, short x, short y, short msxline, ULONG bitplane_address, ULONG bitplane_size)
 {
 	long i, j, count, count2;
 	int k=0, l=0, m=0;
@@ -435,16 +438,16 @@ short sc5_load(char *loadfil, short x, short y, short msxline, ULONG bitplane_ad
 		for(i = 0; i < 4; ++i){
 			pattern[i] = amgcolor[i];
 		}
-		vram_adr = k + l + (x + y * 32) + bitplane_address; //); // * 2;
-		*((unsigned char *)(vram_adr + BITPLANE_SIZE * 0)) = pattern[0];
-		*((unsigned char *)(vram_adr + BITPLANE_SIZE * 1)) = pattern[1];
-		*((unsigned char *)(vram_adr + BITPLANE_SIZE * 2)) = pattern[2];
-		*((unsigned char *)(vram_adr + BITPLANE_SIZE * 3)) = pattern[3];
+		vram_adr = k + l + (x + y * (MSXWIDTH / 8)) + bitplane_address; //); // * 2;
+		*((unsigned char *)(vram_adr + bitplane_size * 0)) = pattern[0];
+		*((unsigned char *)(vram_adr + bitplane_size * 1)) = pattern[1];
+		*((unsigned char *)(vram_adr + bitplane_size * 2)) = pattern[2];
+		*((unsigned char *)(vram_adr + bitplane_size * 3)) = pattern[3];
 
 		k += 1;
-		if(k >= (32)){
+		if(k >= (MSXWIDTH / 8)){
 			k = 0;
-			l += 40;
+			l += (SCREEN_WIDTH / 8);
 		}
 	}
 	Close(stream[0]);
@@ -453,6 +456,153 @@ short sc5_load(char *loadfil, short x, short y, short msxline, ULONG bitplane_ad
 }
 
 int sprite_pattern_no[8], old_sprite_pattern_no[8], spr_x[8], spr_y[8];
+//unsigned char font_buffer[SCREEN_WIDTH / 8][8 * 4][BITPLANE_NUM];
+unsigned char font_buffer[BITPLANE_NUM][8*4][SCREEN_WIDTH / 8];
+
+char chr;
+unsigned char str_temp[11];
+#define SCREEN2 0
+#define CHRPAL_NO 0
+
+void put_strings(unsigned char scr, int x, int y,  char *str, unsigned char pal, ULONG bitplane_address)
+{
+//	y = 28-y;
+
+//	XSIZE = 8;
+//	XSIZA = 0;
+//	YSIZE = 8;
+//	APAGE = 3; //map_page;
+//	VPAGE = 0;
+//	VDPcommand = HMMM;
+
+	ULONG vram_adr;
+	int k, l, i;
+
+	y *= 8;
+
+	while(1){
+		chr = *(str++);
+		if(chr == '\0')
+			break;
+		if((chr < 0x30))
+			chr = 0x40;
+		chr -= '0';
+//		sx = (chr & 0x0f) * 8;
+//		sy = (chr / 16) * 8;
+//		dx = x * 8;
+//		dy = y * 8;
+//		VDPsetAREA2();
+//	int x = 0,y = 0;
+
+		k = chr & 0x0f;
+		l = chr / 16 * 8;
+
+		for(int j = 0; j < 8; ++j){
+			vram_adr = (x) + (y + j) * (SCREEN_WIDTH / 8) + (ULONG)bitplane_address;
+			for(i = 0; i < BITPLANE_NUM; ++i){
+				*((unsigned char *)(vram_adr + BITPLANE_SIZE * i)) = 
+//					font_buffer[k][0 + j][i];
+					font_buffer[i][l + j][k];
+			}
+		}
+
+		++x;
+	}
+}
+/*
+long get_mod10(long n) {
+    // 1. まず「n / 10」の商(q)を近似で求める
+	long res;
+    long q = (n >> 1) + (n >> 2);
+    q = q + (q >> 4);
+    q = q + (q >> 8);
+    q = q + (q >> 16);
+    q = q >> 3;
+
+    // 2. n - (q * 10) を計算する
+    // (q * 10) は (q * 8 + q * 2) つまり (q << 3 + q << 1) で計算可能
+    res = n - ((q << 3) + (q << 1));
+
+    // 3. 近似誤差の修正（ここが重要！）
+    // もし結果が10以上になったら、もう一度10を引く
+    return res; //(res >= 10) ? res - 10 : res;
+}
+*/
+int get_mod10(int n) {
+    // 0.1 をバイナリで近似して掛け算し、10で割った商を求める
+	int res;
+    int q = (n >> 1) + (n >> 2);
+    q = q + (q >> 4);
+    q = q + (q >> 8);
+    q = q + (q >> 16);
+    q = q >> 3; 
+    res = n - ((q << 3) + (q << 1)); // n - (q * 10)
+    return (res >= 10) ? res - 10 : res;
+}
+
+/*
+long divide_by_10(long n) {
+    // 1/10 ≒ 1/16 + 1/32 + 1/128 + 1/256 ... のような近似
+    long q = (n >> 1) + (n >> 2);
+    q = q + (q >> 4);
+    q = q + (q >> 8);
+    q = q + (q >> 16);
+    return q >> 3; // 最終的に調整して商を出す
+}*/
+
+int divide_by_10(int32_t n) {
+    // 0x66666667 は (2^34)/10 を切り上げた値
+    int64_t magic = 0x66666667LL; 
+    return (int32_t)((n * magic) >> 34);
+}
+
+void put_numd(long j, unsigned char digit)
+{
+	unsigned char i = digit;
+	long mod = 0;
+
+	while(i--){
+		mod = get_mod10(j);
+//		if(mod >= 10)
+//			mod = 0;
+		str_temp[i] = mod + 0x30;
+		j = divide_by_10(j);
+	}
+	str_temp[digit] = '\0';
+}
+
+void score_display(ULONG bitplane_address)
+{
+	put_numd(score, 8);
+	put_strings(SCREEN2, 15, 22 , str_temp, CHRPAL_NO, bitplane_address);
+	if(score >= hiscore){
+/*		if((score % 10) == 0){
+			hiscore = score;
+			put_strings(SCREEN2, 8, 22, "HIGH ", CHRPAL_NO, bitplane_address);
+		}*/
+	}
+//	else
+//		put_strings(SCREEN2, 8, 22, "SCORE", CHRPAL_NO, bitplane_address);
+}
+
+void score_displayall(ULONG bitplane_address)
+{
+	put_strings(SCREEN2, 9, 22, "SCORE", CHRPAL_NO, bitplane_address);
+	score_display(bitplane_address);
+}
+
+void hiscore_display(ULONG bitplane_address)
+{
+/*	if(score > hiscore)
+		if((score % 10) == 0)
+			hiscore = score;
+*/
+	put_numd(hiscore, 8);
+
+	put_strings(SCREEN2, 9, 12, "HIGH", CHRPAL_NO, bitplane_address);
+	put_strings(SCREEN2, 9 + 5, 12, str_temp, CHRPAL_NO, bitplane_address);
+}
+
 
 // スプライトポインタ設定
 void set_sprite(int num, int posx, int posy) {
@@ -507,6 +657,7 @@ void set_sprite_all(APTR sprite_base_address) {
 		*((unsigned char *)pointer + 3) = 0x80 * 0 | ((V_STOP & 0x100) << 2) | ((V_START & 0x100) << 1) | (H_START & 0x01);
 	}
 }
+
 
 void set_sprite_pattern(int num, int no) {
 	sprite_pattern_no[num] = no;
@@ -621,12 +772,28 @@ int main(void)
 	i = BITPLANE_SIZE - 4; //SCREEN_WIDTH * SCREEN_HEIGHT / 8 - 4;
 	do{
 		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 0)) = 0;
-		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 1)) = 0xffffffffL;
+		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 1)) = 0; //xffffffffL;
 		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 2)) = 0;
 		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 3)) = 0;
 	}while((i-=4) >= 0);
 
-	sc5_load("RAINCHR5.SC5", 0, 0, 16*3, (ULONG)bitplane_address); //212);
+//	sc5_load("RAINCHR5.SC5", 0, 0, 16*3, (ULONG)bitplane_address, BITPLANE_SIZE); //212);
+//	sc5_load("FONTYOKO.SC5", 0, 0, 8*4, (ULONG)bitplane_address, BITPLANE_SIZE); //212);
+	sc5_load("FONTYOKO.SC5", 0, 0, 8*4, (ULONG)&font_buffer[0][0][0], (SCREEN_WIDTH / 8 * 8 * 4)); //bitplane_address); //212);
+
+/*
+	ULONG vram_adr;
+	int x = 0,y = 0;
+	for(int k = 0; k < 8; ++k){
+		for(int j = 0; j < 8; ++j){
+			vram_adr = (x + k) + (y + j) * (SCREEN_WIDTH / 8) + (ULONG)bitplane_address;
+			for(i = 0; i < BITPLANE_NUM; ++i){
+				*((unsigned char *)(vram_adr + BITPLANE_SIZE * i)) = 
+//					font_buffer[k][0 + j][i];
+					font_buffer[i][0 + j][k];
+			}
+		}
+	}*/
 
 	for(;;){
 		Entity player = {160, 160-16};
@@ -634,8 +801,9 @@ int main(void)
 		Entity enemies[4] = {{0}};
 		Entity pluses[8] = {{0}};  // Plus最大8個
 
-		int score = 0;
-		int combo = 0;
+		int score_disp_flag = 0;
+		score = 0;
+		combo = 0;
 		int spawn_timer = 0;
 		int combo_timer = 0;
 		int wave = 1;
@@ -643,6 +811,9 @@ int main(void)
 		int game_over = 0;
 
 		int count = 0;
+
+		score_displayall((ULONG)bitplane_address);
+
 		while (!game_over) {
 			++count;
 			ULONG joy =ReadJoyPort(1);
@@ -734,6 +905,7 @@ int main(void)
 						combo++;
 						combo_timer = 0;
 						score += 20 * combo;
+						score_disp_flag = 1;
 						enemies_killed_this_wave++;
 
 						// WAVEクリア判定
@@ -755,6 +927,7 @@ int main(void)
 						pluses[p].active = 0;
 						enemies[p].active = 0;
 						score += 50 * combo;
+						score_disp_flag = 1;
 						combo_timer = 0;
 					}else{
 						set_sprite(p+4, pluses[p].x, pluses[p].y);
@@ -780,6 +953,12 @@ int main(void)
 //			while(((Custom.vhposr / 256))); // == 0x20));
 			WaitTOF();
 			set_sprite_all(sprite_address);
+			if(score_disp_flag){
+				score_display((ULONG)bitplane_address);
+				score_disp_flag = 0;
+			}
+//			put_strings(SCREEN2, 8, 22, "SCORE", CHRPAL_NO, (ULONG)bitplane_address);
+//	put_numd(score, 8);
 
 //			*((unsigned char *)0x25001) = player.x;	// H_START
 //			*((unsigned char *)0x25000) = player.y;		// V_START

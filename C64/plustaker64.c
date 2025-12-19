@@ -249,6 +249,42 @@ static void put_numd(long j, char digit)
 	str_temp[digit] = '\0';
 }
 
+
+long score = 0, hiscore = 5000;
+#define CHRPAL_NO COLOR_WHITE
+
+void score_display(void)
+{
+	put_numd(score, 8);
+	put_strings(15, 22 , str_temp, CHRPAL_NO);
+	if(score >= hiscore){
+		if((score % 10) == 0){
+			hiscore = score;
+			put_strings(8, 22, "HIGH ", CHRPAL_NO);
+		}
+	}else
+		put_strings(8, 22, "SCORE", CHRPAL_NO);
+
+}
+
+void score_displayall(void)
+{
+//	put_strings(8, 22, "SCORE", CHRPAL_NO);
+	score_display();
+}
+
+void hiscore_display(void)
+{
+	if(score > hiscore)
+		if((score % 10) == 0)
+			hiscore = score;
+
+	put_numd(hiscore, 8);
+
+	put_strings(9, 12, "HIGH", CHRPAL_NO);
+	put_strings(9 + 5, 12, str_temp, CHRPAL_NO);
+}
+
 #ifdef DEBUG
 static void copy(void)
 {
@@ -424,8 +460,8 @@ int main(void)
 		put_strings(i, 18, "\x5b", COLOR_LIGHT_RED);
 		put_strings(i, 19, "\x5b", COLOR_LIGHT_RED);
 	}
-	put_strings(12, 22, "SCORE 000000000", COLOR_WHITE );
-	put_strings(12, 24, "LIFE", COLOR_WHITE );
+//	put_strings(12, 22, "SCORE 000000000", COLOR_WHITE );
+//	put_strings(12, 24, "LIFE", COLOR_WHITE );
 
 
 	// Set SPRITE Data
@@ -499,15 +535,18 @@ int main(void)
 		Entity enemies[4] = {{0}};
 		Entity pluses[8] = {{0}};  // Plusç≈ëÂ8å¬
 
-		int score = 0;
+		score = 0;
 		int combo = 0;
 		int spawn_timer = 0;
 		int combo_timer = 0;
 		int wave = 1;
 		int enemies_killed_this_wave = 0;
 		int game_over = 0;
+		int score_display_flag = 0;
 
 		int count = 0;
+
+		score_displayall();
 		while (!game_over) {
 			++count;
 
@@ -679,6 +718,7 @@ skip:
 						combo++;
 						combo_timer = 0;
 						score += 20 * combo;
+						score_display_flag = 1;
 						enemies_killed_this_wave++;
 
 						// WAVEÉNÉäÉAîªíË
@@ -700,6 +740,7 @@ skip:
 						pluses[p].active = 0;
 						enemies[p].active = 0;
 						score += 50 * combo;
+						score_display_flag = 1;
 						combo_timer = 0;
 					}else{
 						set_sprite(p+4, pluses[p].x, pluses[p].y);
@@ -723,6 +764,10 @@ skip:
 				}
 			}
 			set_sprite_all();
+			if(score_display_flag){
+				score_display();
+				score_display_flag = 0;
+			}
 			while(*RASTER != 249);
 
 		}
