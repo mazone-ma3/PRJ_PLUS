@@ -836,6 +836,7 @@ int main(void)
 		int game_over = 0;
 		int score_disp_flag = 0;
 		int combo_display_flag = 0;
+		int enemy_speed = 2;
 
 		int count = 0;
 
@@ -899,7 +900,7 @@ int main(void)
 				if (enemies[i].active) {
 					if (!pluses[i].active) {
 						set_sprite_pattern(i+4, 2);
-						enemies[i].y += 2;
+						enemies[i].y += enemy_speed;
 						if (enemies[i].y > (SCREEN_HEIGHT + 16)) enemies[i].active = 0;
 						set_sprite(i+4, enemies[i].x, enemies[i].y);
 					} else {
@@ -943,6 +944,7 @@ int main(void)
 						if (enemies_killed_this_wave >= 5 * wave) {
 							wave++;
 							enemies_killed_this_wave = 0;
+							++enemy_speed;
 						}
 						break;
 					}
