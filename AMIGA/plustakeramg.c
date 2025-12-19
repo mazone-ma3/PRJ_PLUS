@@ -607,7 +607,7 @@ void hiscore_display(ULONG bitplane_address)
 */
 	put_numd(hiscore, 8);
 
-	put_strings(SCREEN2, 12, 24, "HIGH", CHRPAL_NO, bitplane_address);
+	put_strings(SCREEN2, 12, 24, "HIGH ", CHRPAL_NO, bitplane_address);
 	put_strings(SCREEN2, 19, 24, str_temp, CHRPAL_NO, bitplane_address);
 }
 
