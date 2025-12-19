@@ -145,10 +145,10 @@ unsigned char spr0[64] = {
 };
 
 unsigned char spr1[64] = {
-	 0x03, 0xc0, 0x00,
-	 0x03, 0xc0, 0x00,
-	 0x03, 0xc0, 0x00,
-	 0x03, 0xc0, 0x00,
+	 0x07, 0xe0, 0x00,
+	 0x07, 0xe0, 0x00,
+	 0x07, 0xe0, 0x00,
+	 0x07, 0xe0, 0x00,
 	 0x00, 0x00, 0x00,
 	 0x00, 0x00, 0x00,
 	 0x00, 0x00, 0x00,
@@ -170,21 +170,21 @@ unsigned char spr1[64] = {
 };
 
 unsigned char spr2[64] = {
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
-	 0xff, 0xff, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
+	 0xaa, 0xaa, 0x00,
 	 0x00, 0x00, 0x00,
 	 0x00, 0x00, 0x00,
 	 0x00, 0x00, 0x00,
@@ -256,14 +256,24 @@ long score = 0, hiscore = 5000;
 void score_display(void)
 {
 	put_numd(score, 8);
-	put_strings(15, 22 , str_temp, CHRPAL_NO);
+	put_strings(19, 22 , str_temp, CHRPAL_NO);
 	if(score >= hiscore){
 		if((score % 10) == 0){
 			hiscore = score;
-			put_strings(8, 22, "HIGH ", CHRPAL_NO);
+			put_strings(12, 22, "HIGH ", CHRPAL_NO);
 		}
 	}else
-		put_strings(8, 22, "SCORE", CHRPAL_NO);
+		put_strings(12, 22, "SCORE", CHRPAL_NO);
+
+}
+
+int combo = 0;
+
+void combo_display(void)
+{
+	put_numd(combo, 8);
+	put_strings(19, 24 , str_temp, CHRPAL_NO);
+		put_strings(12, 24, "COMBO", CHRPAL_NO);
 
 }
 
@@ -281,8 +291,14 @@ void hiscore_display(void)
 
 	put_numd(hiscore, 8);
 
-	put_strings(9, 12, "HIGH", CHRPAL_NO);
-	put_strings(9 + 5, 12, str_temp, CHRPAL_NO);
+	put_strings(12, 24, "HIGH ", CHRPAL_NO);
+	put_strings(19, 24, str_temp, CHRPAL_NO);
+}
+
+void hiscore_display_clear(void)
+{
+	put_strings(12, 24, "     ", CHRPAL_NO);
+	put_strings(19, 24, "        ", CHRPAL_NO);
 }
 
 #ifdef DEBUG
@@ -371,6 +387,74 @@ void set_sprite_all(void) {
 	}
 }
 
+
+unsigned char keyscan(void)
+{
+	unsigned char keycode = 0;
+			/* PAD */
+			*portadir = 224;
+			*porta = 0xff;
+			if(!BITTST(0, *portb)){	/* UP */
+				BITSET(0, keycode);
+			}
+			if(!BITTST(1, *portb)){	/* DOWN */
+				BITSET(1, keycode);
+			}
+			if(!BITTST(2, *portb)){	/* LEFT */
+				BITSET(2, keycode);
+			}
+			if(!BITTST(3, *portb)){	/* RIGHT */
+				BITSET(3, keycode);
+			}
+			if(!BITTST(4, *portb)){	/* SHOT */
+				BITSET(4, keycode);
+			}
+
+			if(keycode)
+				goto skip;
+
+			/* KEYBOARD */
+			*portadir = 255;
+			*porta = 0xef;
+
+			if(!BITTST(1, *portb)){	/* I */
+				BITSET(0, keycode);
+			}
+			if(!BITTST(4, *portb)){	/* M */
+				BITSET(1, keycode);
+			}
+			if(!BITTST(2, *portb)){	/* J */
+				BITSET(2, keycode);
+			}
+			if(!BITTST(5, *portb)){	/* K */
+				BITSET(3, keycode);
+			}
+			if(!BITTST(7, *portb)){	/* N */
+				BITSET(4, keycode);
+			}
+			if(!BITTST(3, *portb)){	/* 0 */
+				BITSET(5, keycode);
+			}
+
+			*porta = 0x7f;
+			if(!BITTST(4, *portb)){	/* ' ' */
+				BITSET(4, keycode);
+			}
+			if(!BITTST(1, *portb)){	/* <- */
+				BITSET(5, keycode);
+			}
+			if(!BITTST(7, *portb)){	/* STOP */
+				BITSET(5, keycode);
+			}
+
+			*porta = 0xfd;
+			if(!BITTST(4, *portb)){	/* Z */
+				BITSET(4, keycode);
+			}
+
+skip:
+			return keycode;
+}
 
 
 short x;
@@ -536,84 +620,26 @@ int main(void)
 		Entity pluses[8] = {{0}};  // Plus最大8個
 
 		score = 0;
-		int combo = 0;
+		combo = 0;
 		int spawn_timer = 0;
 		int combo_timer = 0;
 		int wave = 1;
 		int enemies_killed_this_wave = 0;
 		int game_over = 0;
 		int score_display_flag = 0;
+		int combo_display_flag = 0;
 
 		int count = 0;
 
 		score_displayall();
+//		combo_display();
 		while (!game_over) {
 			++count;
+			if(combo)
+				++combo_timer;
+			keycode = keyscan();
 
-			keycode = 0;
 
-			/* PAD */
-			*portadir = 224;
-			*porta = 0xff;
-			if(!BITTST(0, *portb)){	/* UP */
-				BITSET(0, keycode);
-			}
-			if(!BITTST(1, *portb)){	/* DOWN */
-				BITSET(1, keycode);
-			}
-			if(!BITTST(2, *portb)){	/* LEFT */
-				BITSET(2, keycode);
-			}
-			if(!BITTST(3, *portb)){	/* RIGHT */
-				BITSET(3, keycode);
-			}
-			if(!BITTST(4, *portb)){	/* SHOT */
-				BITSET(4, keycode);
-			}
-
-			if(keycode)
-				goto skip;
-
-			/* KEYBOARD */
-			*portadir = 255;
-			*porta = 0xef;
-
-			if(!BITTST(1, *portb)){	/* I */
-				BITSET(0, keycode);
-			}
-			if(!BITTST(4, *portb)){	/* M */
-				BITSET(1, keycode);
-			}
-			if(!BITTST(2, *portb)){	/* J */
-				BITSET(2, keycode);
-			}
-			if(!BITTST(5, *portb)){	/* K */
-				BITSET(3, keycode);
-			}
-			if(!BITTST(7, *portb)){	/* N */
-				BITSET(4, keycode);
-			}
-			if(!BITTST(3, *portb)){	/* 0 */
-				BITSET(5, keycode);
-			}
-
-			*porta = 0x7f;
-			if(!BITTST(4, *portb)){	/* ' ' */
-				BITSET(4, keycode);
-			}
-			if(!BITTST(1, *portb)){	/* <- */
-				BITSET(5, keycode);
-			}
-			if(!BITTST(7, *portb)){	/* STOP */
-				BITSET(5, keycode);
-			}
-
-			*porta = 0xfd;
-			if(!BITTST(4, *portb)){	/* Z */
-				BITSET(4, keycode);
-			}
-
-skip:
 			if(BITTST(0, keycode)){	/* UP */
 				player.y -= 3;
 			}
@@ -717,6 +743,7 @@ skip:
 
 						combo++;
 						combo_timer = 0;
+						combo_display_flag = 1;
 						score += 20 * combo;
 						score_display_flag = 1;
 						enemies_killed_this_wave++;
@@ -755,6 +782,8 @@ skip:
 			// コンボ切れ
 			if (combo_timer > 60) {
 				combo = 0;
+				combo_display_flag = 1;
+				combo_timer = 0;
 			}
 
 			// ゲームオーバー (敵接触)
@@ -765,29 +794,41 @@ skip:
 			}
 			set_sprite_all();
 			if(score_display_flag){
-				score_display();
 				score_display_flag = 0;
+				score_display();
 			}
+			else if(combo_display_flag){
+				combo_display_flag = 0;
+				if(combo)
+					combo_display();
+				else
+					hiscore_display_clear();
+			}
+
 			while(*RASTER != 249);
 
 		}
 end:
 		for(;;){
-//			ULONG joy = ReadJoyPort(1);
-//			if(!(joy & JPF_BTN1))
+			if(!BITTST(4, keyscan()))	/* SHOT */
 				break;
 		}
 		// ゲームオーバー画面
 		/* ここにテキスト描画追加可能 */
+		hiscore_display();
 		for(;;){
-//			ULONG joy = ReadJoyPort(1);
-//			if(joy & JPF_BTN1)
+			if(BITTST(4, keyscan()))	/* SHOT */
 				break;
 		}
+		hiscore_display_clear();
 		// (スプライト全消し)
 		for (int i = 0; i < 8; i++){
 			set_sprite(i, 0, 0);
 			set_sprite_all();
+		}
+		for(;;){
+			if(!BITTST(4, keyscan()))	/* SHOT */
+				break;
 		}
 	}
 

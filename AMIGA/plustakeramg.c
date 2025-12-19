@@ -575,15 +575,22 @@ void put_numd(long j, unsigned char digit)
 void score_display(ULONG bitplane_address)
 {
 	put_numd(score, 8);
-	put_strings(SCREEN2, 15, 22 , str_temp, CHRPAL_NO, bitplane_address);
+	put_strings(SCREEN2, 19, 22 , str_temp, CHRPAL_NO, bitplane_address);
 	if(score >= hiscore){
 		if((get_mod10(score)) == 0){
 			hiscore = score;
-			put_strings(SCREEN2, 8, 22, "HIGH ", CHRPAL_NO, bitplane_address);
+			put_strings(SCREEN2, 12, 22, "HIGH ", CHRPAL_NO, bitplane_address);
 		}
 	}
 	else
-		put_strings(SCREEN2, 8, 22, "SCORE", CHRPAL_NO, bitplane_address);
+		put_strings(SCREEN2, 12, 22, "SCORE", CHRPAL_NO, bitplane_address);
+}
+
+void combo_display(ULONG bitplane_address)
+{
+	put_numd(combo, 8);
+	put_strings(SCREEN2, 19, 24 , str_temp, CHRPAL_NO, bitplane_address);
+		put_strings(SCREEN2, 12, 24, "COMBO", CHRPAL_NO, bitplane_address);
 }
 
 void score_displayall(ULONG bitplane_address)
@@ -600,10 +607,15 @@ void hiscore_display(ULONG bitplane_address)
 */
 	put_numd(hiscore, 8);
 
-	put_strings(SCREEN2, 9, 12, "HIGH", CHRPAL_NO, bitplane_address);
-	put_strings(SCREEN2, 9 + 5, 12, str_temp, CHRPAL_NO, bitplane_address);
+	put_strings(SCREEN2, 12, 24, "HIGH", CHRPAL_NO, bitplane_address);
+	put_strings(SCREEN2, 19, 24, str_temp, CHRPAL_NO, bitplane_address);
 }
 
+void hiscore_display_clear(ULONG bitplane_address)
+{
+	put_strings(SCREEN2, 12, 24, "     ", CHRPAL_NO, bitplane_address);
+	put_strings(SCREEN2, 19, 24, "        ", CHRPAL_NO, bitplane_address);
+}
 
 // スプライトポインタ設定
 void set_sprite(int num, int posx, int posy) {
@@ -815,7 +827,6 @@ int main(void)
 		Entity enemies[4] = {{0}};
 		Entity pluses[8] = {{0}};  // Plus最大8個
 
-		int score_disp_flag = 0;
 		score = 0;
 		combo = 0;
 		int spawn_timer = 0;
@@ -823,13 +834,18 @@ int main(void)
 		int wave = 1;
 		int enemies_killed_this_wave = 0;
 		int game_over = 0;
+		int score_disp_flag = 0;
+		int combo_display_flag = 0;
 
 		int count = 0;
 
 		score_displayall((ULONG)bitplane_address);
+//		combo_display();
 
 		while (!game_over) {
 			++count;
+			if(combo)
+				++combo_timer;
 			ULONG joy =ReadJoyPort(1);
 
 			// 移動 (仮にキーボードor joy direct)
@@ -918,6 +934,7 @@ int main(void)
 
 						combo++;
 						combo_timer = 0;
+						combo_display_flag = 1;
 						score += 20 * combo;
 						score_disp_flag = 1;
 						enemies_killed_this_wave++;
@@ -943,6 +960,7 @@ int main(void)
 						score += 50 * combo;
 						score_disp_flag = 1;
 						combo_timer = 0;
+						combo_display_flag = 1;
 					}else{
 						set_sprite(p+4, pluses[p].x, pluses[p].y);
 						if (pluses[p].y > (SCREEN_HEIGHT + 16)){
@@ -956,6 +974,8 @@ int main(void)
 			// コンボ切れ
 			if (combo_timer > 60) {
 				combo = 0;
+				combo_display_flag = 1;
+				combo_timer = 0;
 			}
 
 			// ゲームオーバー (敵接触)
@@ -965,12 +985,22 @@ int main(void)
 				}
 			}
 //			while(((Custom.vhposr / 256))); // == 0x20));
+			if(score_disp_flag){
+				score_disp_flag = 0;
+				score_display((ULONG)bitplane_address);
+			}
+			else if(combo_display_flag){
+				combo_display_flag = 0;
+				if(combo){
+					combo_display((ULONG)bitplane_address);
+				}else{
+					hiscore_display_clear((ULONG)bitplane_address);
+				}
+			}
+
 			WaitTOF();
 			set_sprite_all(sprite_address);
-			if(score_disp_flag){
-				score_display((ULONG)bitplane_address);
-				score_disp_flag = 0;
-			}
+
 //			put_strings(SCREEN2, 8, 22, "SCORE", CHRPAL_NO, (ULONG)bitplane_address);
 //	put_numd(score, 8);
 
@@ -985,15 +1015,22 @@ int main(void)
 		}
 		// ゲームオーバー画面
 		/* ここにテキスト描画追加可能 */
+		hiscore_display((ULONG)bitplane_address);
 		for(;;){
 			ULONG joy = ReadJoyPort(1);
 			if(joy & JPF_BTN1)
 				break;
 		}
+		hiscore_display_clear((ULONG)bitplane_address);
 		// (スプライト全消し)
 		for (int i = 0; i < 8; i++){
 			set_sprite(i, 0, 0);
 			set_sprite_all(sprite_address);
+		}
+		for(;;){
+			ULONG joy = ReadJoyPort(1);
+			if(!(joy & JPF_BTN1))
+				break;
 		}
 	}
 
