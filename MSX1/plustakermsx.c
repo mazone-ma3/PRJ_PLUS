@@ -173,7 +173,7 @@ void set_sprite(char num, int posx, int posy)
 }
 
 char patternno_table[3] = {0, 12, 8};
-char patterncolor_table[6] = {15, 10, 10, 10,  10, 10};
+char patterncolor_table[6] = {15, 10, 15, 15,  10, 10};
 
 void set_sprite_pattern(int num, int no) {
 	sprite_pattern_no[num] = patternno_table[no];
