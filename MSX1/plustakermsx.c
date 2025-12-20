@@ -75,11 +75,8 @@ unsigned char spr3[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-unsigned char spr4[] = {
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+unsigned char block[] = {
+	0x80,0x80,0x80,0xff,0x08,0x08,0x08,0xff,
 };
 
 // \‘¢‘Ì
@@ -222,14 +219,25 @@ int main(void)
 	vdp_set_sprite_16(4, spr1);
 	vdp_set_sprite_16(8, spr2);
 	vdp_set_sprite_16(12, spr3);
-	vdp_set_sprite_16(16, spr4);
 
 	vdp_put_sprite_16(0, 0,0, 0,15);
 	vdp_put_sprite_16(1, 0,0, 4,10);
 
+	for(j = '0'; j < 'Z'; ++j){
+		for(i = 0; i < 8; ++i){
+			char k =vpeek(i + 8  * j);
+			vpoke(i + 8 * j, k | k << 1);
+		}
+	}
+
+	for(i = 0; i < 8; ++i)
+		vpoke(i + 8 * 'a', block[i]);
+
+	vpoke(0x2000 + 'a' / 8, 8 * 16 + 9);
+
 	for(i = 0; i < 32; ++i){
-		put_strings(i, 18, "@", 0);
-		put_strings(i, 19, "@", 0);
+		put_strings(i, 18, "a", 0);
+		put_strings(i, 19, "a", 0);
 	}
 
 	for(i = 0; i < 8; ++i){
@@ -433,6 +441,7 @@ int main(void)
 
 			old_jiffy = *jiffy;
 			while(*jiffy == old_jiffy);
+			set_sprite_all();
 
 			if(score_display_flag){
 				score_display_flag = 0;
@@ -445,8 +454,6 @@ int main(void)
 				else
 					hiscore_display_clear();
 			}
-
-			set_sprite_all();
 
 		}
 		for(;;){
