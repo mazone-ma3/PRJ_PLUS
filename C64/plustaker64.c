@@ -1,4 +1,4 @@
-/* C64 Sample plustaker64.c by m@3 */
+/* plustaker64.c By m@33 with Grok */
 
 #include <stdio.h>
 #include <stdlib.h>

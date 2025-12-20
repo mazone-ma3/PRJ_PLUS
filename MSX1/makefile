@@ -1,4 +1,4 @@
-# plustaker2 makefile for MSX z88dk
+# plustaker2 makefile for MSX1 z88dk
 
 TARGET = plustakermsx
 
@@ -26,16 +26,16 @@ LINKOPTS3 = +msx -create-app -subtype=rom -lmsxbios
 
 #ê∂ê¨éËèá
 
-all:$(TARGET).ROM
+all:$(TARGET).rom
 
 clean:
-	rm $(TARGET).o $(TARGET).ROM
+	rm $(TARGET).o $(TARGET).rom
 
 OBJFILES = $(TARGET).o
 
-$(TARGET).ROM : $(OBJFILES)
+$(TARGET).rom : $(OBJFILES)
 #	$(CC) $(LINKOPTS) $(OBJFILES) -o $(TARGET).COM
-#	$(CC) $(LINKOPTS2) $(OBJFILES) -o $(TARGET).BIN
-	$(CC) $(LINKOPTS3) $(OBJFILES) -o $(TARGET).ROM
+#	$(CC) $(LINKOPTS2) $(OBJFILES) -o $(TARGET).bin
+	$(CC) $(LINKOPTS3) $(OBJFILES) -o $(TARGET).rom
 
 $(TARGET).o : $(TARGET).c

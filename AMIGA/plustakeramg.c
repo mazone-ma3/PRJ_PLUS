@@ -1,4 +1,4 @@
-/* plustaker2.c By m@3 with Grok 2025. */
+/* plustakeramg.c By m@3 with Grok 2025. */
 
 #define SCREEN_WIDTH (320)
 #define SCREEN_HEIGHT (200)

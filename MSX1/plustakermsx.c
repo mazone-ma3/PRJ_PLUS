@@ -1,3 +1,5 @@
+/* plustakermsx.c By m@3 3 with Grok 2025. */
+
 #include <stdio.h>
 #include <conio.h>
 
@@ -189,7 +191,7 @@ void set_sprite_all(void) {
 		if(sprite_pattern_no[i] == 0)
 			vdp_put_sprite_16(spr_count++, spr_x[i],  spr_y[i], sprite_pattern_no[i] + 4, sprite_color_no[i][1]);
 	}
-		vdp_put_sprite_16(spr_count++, 0,  208, 0, 0);
+	vdp_put_sprite_16(spr_count++, 0,  208, 0, 0);
 }
 
 
@@ -241,7 +243,7 @@ int main(void)
 	}
 
 	for(i = 0; i < 8; ++i){
-		char patno;
+		char patno = 0;
 		switch(i){
 			case 0:
 				patno = 0;

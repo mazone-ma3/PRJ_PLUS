@@ -1,4 +1,4 @@
-# plustaker64 makefile for llvm-cmos
+# plustake2 makefile for C64 llvm-cmos
 
 TARGET = plustaker64
 
