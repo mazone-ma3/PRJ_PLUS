@@ -14,8 +14,9 @@ llvm-cmosでコンパイルしてください。
 z88dkでコンパイルしてください。
 
 WebMSX:
-https://webmsx.org/?MACHINE=MSX2PJ&DISKA_URL=https://github.com/mazone-ma3/PRJ_PLUS/raw/refs/heads/main/MSX1/plustakermsx.rom
+https://webmsx.org/?MACHINE=MSX2PJ&rom=https://github.com/mazone-ma3/PRJ_PLUS/raw/refs/heads/main/MSX1/plustakermsx.rom
 
 <img width="2880" height="1920" alt="タイトルなし_" src="https://github.com/user-attachments/assets/a100e02f-6d43-40f3-bba3-9aeeaf21ec40" />
+
 
 
