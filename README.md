@@ -1,5 +1,6 @@
 # PRJ_PLUS
 シューティングゲーム作成実験3 plustaker2 読み物 By m@3
+
 This software includes code generated with the assistance of [Gemini / Grok], an AI developed by [Google / xAI].
 
 ・AMIGA版
@@ -18,6 +19,7 @@ WebMSX:
 https://webmsx.org/?MACHINE=MSX2PJ&rom=https://github.com/mazone-ma3/PRJ_PLUS/raw/refs/heads/main/MSX1/plustakermsx.rom
 
 <img width="2880" height="1920" alt="タイトルなし_" src="https://github.com/user-attachments/assets/a100e02f-6d43-40f3-bba3-9aeeaf21ec40" />
+
 
 
 
