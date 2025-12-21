@@ -461,8 +461,9 @@ int main(void)
 				}
 			}
 
-			while(*jiffy == old_jiffy);
 			old_jiffy = *jiffy;
+			while(*jiffy == old_jiffy);
+//			old_jiffy = *jiffy;
 			set_sprite_all();
 
 			if(score_display_flag){
