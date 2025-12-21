@@ -481,7 +481,8 @@ int main(void)
 			// ゲームオーバー (敵接触)
 			for (int e = 0; e < 4; e++) {
 				if (enemies[e].active && abs(enemies[e].x - player.x) < 16 && abs(enemies[e].y - player.y) < 16) {
-					game_over = 1;
+					if(!pluses[e].active)
+						game_over = 1;
 				}
 			}
 
