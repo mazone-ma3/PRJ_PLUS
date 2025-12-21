@@ -200,15 +200,15 @@ unsigned short SPRITE[] = {
 unsigned short SPRITE2[] = {
 	0x6D60,0x7200, //VSTART, HSTART, VSTOP
 
-	0x03C0, 0x03C0,
-	0x07E0, 0x07E0,
-	0x07E0, 0x07E0,
-	0x03C0, 0x03C0,
+	0x03c0, 0x03c0,
+	0x03c0, 0x03c0,
+	0x03c0, 0x03c0,
+	0x03c0, 0x03c0,
 
-	0x0000, 0x0000,
-	0x0000, 0x0000,
-	0x0000, 0x0000,
-	0x0000, 0x0000,
+	0x03c0, 0x03c0,
+	0x03c0, 0x03c0,
+	0x03c0, 0x03c0,
+	0x03c0, 0x03c0,
 
 	0x0000, 0x0000,
 	0x0000, 0x0000,
@@ -866,9 +866,22 @@ int main(void)
 
 	/* pallet */
 	for(i = 0; i < 16; i+=4){
-		Custom.color[17 + i] = 0xff0;//0x0ff0;	/* SPR-0 Yellow */
-		Custom.color[18 + i] = 0xf00;//0x00ff;	/* SPR-1 Red */
-		Custom.color[19 + i] = 0xfff;//0x0f0f;	/* SPR-2 White */
+		switch(i){
+//			case 4:
+//			case 8:
+//			case 2:
+//			case 3:
+//				Custom.color[17 + i] = 0x00f;//0x0ff0;	/* SPR-0 Blue */
+//				Custom.color[18 + i] = 0x00f;//0x00ff;	/* SPR-1 Blue */
+//				Custom.color[19 + i] = 0x00f;//0x0f0f;	/* SPR-2 Blue */
+//				break;
+
+			default:
+				Custom.color[17 + i] = 0xff0;//0x0ff0;	/* SPR-0 Yellow */
+				Custom.color[18 + i] = 0xf00;//0x00ff;	/* SPR-1 Red */
+				Custom.color[19 + i] = 0xfff;//0x0f0f;	/* SPR-2 White */
+				break;
+		}
 	}
 	for(i = 0; i < 16; ++i)
 		Custom.color[i] = org_pal[i][2] / 1 | ((org_pal[i][1]/1) << 4) | ((org_pal[i][0]/1) << 8);
