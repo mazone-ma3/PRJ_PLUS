@@ -505,6 +505,7 @@ int main(void)
 				else
 					hiscore_display_clear();
 			}
+			spr_flag = 0;
 			EI();
 			DI();
 			spr_flag = 1;
