@@ -492,7 +492,7 @@ int main(void)
 			DI();
 //			set_sprite_all();
 			put_sprite();
-			spr_flag = 1;
+//			spr_flag = 1;
 
 			if(score_display_flag){
 				score_display_flag = 0;
@@ -506,7 +506,9 @@ int main(void)
 					hiscore_display_clear();
 			}
 			EI();
-
+			DI();
+			spr_flag = 1;
+			EI();
 		}
 		reset_int();
 		set_sprite_all();
