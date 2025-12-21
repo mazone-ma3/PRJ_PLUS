@@ -8,8 +8,21 @@
 #include <msx.h>
 #include <msx\gfx.h>
 
+
 unsigned char *jiffy = (unsigned char *)0xfc9e, old_jiffy;
 unsigned char *clicksw = 0xf3db;
+
+#define DI() {\
+__asm\
+	di\
+__endasm;\
+}
+
+#define EI() {\
+__asm\
+	ei\
+__endasm;\
+}
 
 /************************************************************************/
 /*		BITëÄçÏÉ}ÉNÉçíËã`												*/
@@ -194,12 +207,17 @@ void set_sprite_all(void) {
 	vdp_put_sprite_16(spr_count++, 0,  208, 0, 0);
 }
 
-
-unsigned char keyscan(void)
+void set_se(void)
 {
-	return 0;
+	DI();
+	set_psg(6,127);
+	set_psg(11,0);
+	set_psg(12,15);
+	set_psg(7,0x9c);  // 10011100
+	set_psg(13,9);
+	set_psg(10,0x10);
+	EI();
 }
-
 
 short x;
 unsigned char y, color;
@@ -284,6 +302,7 @@ int main(void)
 		int enemy_speed = 2;
 
 		int count = 0;
+		old_jiffy = *jiffy;
 
 		score_displayall();
 //		combo_display();
@@ -291,7 +310,7 @@ int main(void)
 			++count;
 			if(combo)
 				++combo_timer;
-			keycode = get_stick(0) | get_stick(1); // keyscan();
+			keycode = get_stick(0) | get_stick(1);
 
 			if((keycode == 1) || (keycode == 2) || (keycode == 8)){	/* UP */
 				player.y -= 3;
@@ -377,6 +396,7 @@ int main(void)
 //						enemies[e].active = 0;
 						set_sprite(b+1, 0, 0);
 						set_sprite(e+4, 0, 0);
+						set_se();
 
 						// Plusê∂ê¨
 //						for (int p = 0; p < 1; p++) {
@@ -441,8 +461,8 @@ int main(void)
 				}
 			}
 
-			old_jiffy = *jiffy;
 			while(*jiffy == old_jiffy);
+			old_jiffy = *jiffy;
 			set_sprite_all();
 
 			if(score_display_flag){

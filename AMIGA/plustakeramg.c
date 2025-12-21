@@ -384,6 +384,7 @@ BPTR stream[1];
 
 unsigned char conv_tbl[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 , 15};
 
+
 short sc5_load(char *loadfil, short x, short y, short msxline, ULONG bitplane_address, ULONG bitplane_size)
 {
 	long i, j, count, count2;
@@ -465,7 +466,11 @@ unsigned char str_temp[11];
 #define SCREEN2 0
 #define CHRPAL_NO 0
 
-void put_strings(unsigned char scr, int x, int y,  char *str, unsigned char pal, ULONG bitplane_address)
+APTR base_address;
+APTR sprite_address;
+APTR bitplane_address;
+
+void put_strings(unsigned char scr, int x, int y,  char *str, unsigned char pal)
 {
 //	y = 28-y;
 
@@ -572,34 +577,34 @@ void put_numd(long j, unsigned char digit)
 	str_temp[digit] = '\0';
 }
 
-void score_display(ULONG bitplane_address)
+void score_display(void)
 {
 	put_numd(score, 8);
-	put_strings(SCREEN2, 19, 22 , str_temp, CHRPAL_NO, bitplane_address);
+	put_strings(SCREEN2, 19, 22 , str_temp, CHRPAL_NO);
 	if(score >= hiscore){
 		if((get_mod10(score)) == 0){
 			hiscore = score;
-			put_strings(SCREEN2, 12, 22, "HIGH ", CHRPAL_NO, bitplane_address);
+			put_strings(SCREEN2, 12, 22, "HIGH ", CHRPAL_NO);
 		}
 	}
 	else
-		put_strings(SCREEN2, 12, 22, "SCORE", CHRPAL_NO, bitplane_address);
+		put_strings(SCREEN2, 12, 22, "SCORE", CHRPAL_NO);
 }
 
-void combo_display(ULONG bitplane_address)
+void combo_display(void)
 {
 	put_numd(combo, 8);
-	put_strings(SCREEN2, 19, 24 , str_temp, CHRPAL_NO, bitplane_address);
-		put_strings(SCREEN2, 12, 24, "COMBO", CHRPAL_NO, bitplane_address);
+	put_strings(SCREEN2, 19, 24 , str_temp, CHRPAL_NO);
+		put_strings(SCREEN2, 12, 24, "COMBO", CHRPAL_NO);
 }
 
-void score_displayall(ULONG bitplane_address)
+void score_displayall(void)
 {
-//	put_strings(SCREEN2, 9, 22, "SCORE", CHRPAL_NO, bitplane_address);
-	score_display(bitplane_address);
+//	put_strings(SCREEN2, 9, 22, "SCORE", CHRPAL_NO);
+	score_display();
 }
 
-void hiscore_display(ULONG bitplane_address)
+void hiscore_display(void)
 {
 /*	if(score > hiscore)
 		if((score % 10) == 0)
@@ -607,14 +612,14 @@ void hiscore_display(ULONG bitplane_address)
 */
 	put_numd(hiscore, 8);
 
-	put_strings(SCREEN2, 12, 24, "HIGH ", CHRPAL_NO, bitplane_address);
-	put_strings(SCREEN2, 19, 24, str_temp, CHRPAL_NO, bitplane_address);
+	put_strings(SCREEN2, 12, 24, "HIGH ", CHRPAL_NO);
+	put_strings(SCREEN2, 19, 24, str_temp, CHRPAL_NO);
 }
 
-void hiscore_display_clear(ULONG bitplane_address)
+void hiscore_display_clear(void)
 {
-	put_strings(SCREEN2, 12, 24, "     ", CHRPAL_NO, bitplane_address);
-	put_strings(SCREEN2, 19, 24, "        ", CHRPAL_NO, bitplane_address);
+	put_strings(SCREEN2, 12, 24, "     ", CHRPAL_NO);
+	put_strings(SCREEN2, 19, 24, "        ", CHRPAL_NO);
 }
 
 // スプライトポインタ設定
@@ -689,18 +694,102 @@ void set_copperl(ULONG bitplane_address, ULONG sprite_address)
 	}
 }
 
+#define rawsize 5000 //6600
+
+APTR rawbuffer;
+
+int raw_load(char *loadfil, char *mem, int size)
+{
+	if (!(stream[0] = Open( loadfil, MODE_READWRITE))) {
+//		printf("Can\'t open file %s.", loadfil);
+		put_strings(SCREEN2, 0, 0, "ERROR", CHRPAL_NO);
+
+		Close(stream[0]);
+		return 1;
+	}
+	size = Read(stream[0], mem, size);
+	Close(stream[0]);
+	return size;
+}
+
+void se(void)
+{
+	unsigned int *p;
+	unsigned short *pp;
+
+	pp = (unsigned short *)0x0dff096;
+	*pp = 0x0001;	/* DMA OFF (ch0) */
+
+	p = (unsigned int *)0x0dff0a0;
+	*p = (unsigned int)rawbuffer;	/* ch.0 address */
+	pp = (unsigned short *)0x0dff0a4;
+	*pp = 6500;	/* length */
+	pp = (unsigned short *)0x0dff0a6;
+	*pp = 700;	/* pitch */
+	pp = (unsigned short *)0x0dff0a8;
+	*pp = 64;	/* volume(0-64)  */
+	pp = (unsigned short *)0x0dff096;
+	*pp = 0x8001;	/* DMA ON (ch0) */
+
+/*
+lea.l sample_start, a1     ; サンプルアドレス
+move.l a1, $DFF0A0         ; ch0 アドレス
+move.w #SAMPLE_LENGTH, $DFF0A4  ; 長さ (e.g. 100)
+move.w #700, $DFF0A6       ; ピッチ
+move.w #0, $DFF0A8         ; ボリューム0スタート
+
+move.w #$8001, $DFF096     ; DMA ON (ch0)
+
+; ボリューム/ピッチ徐々変化 (ループ)
+moveq #0, d1               ; vol=0
+move.l #700, d2            ; per=700
+up_loop:
+    move.w d1, $DFF0A8
+    move.w d2, $DFF0A6
+    addq #1, d1
+    subq #8, d2
+    dbra #63, up_loop     ; 64回
+
+move.w #$0001, $DFF096     ; DMA OFF*/
+}
+
+void seoff(void)
+{
+	unsigned short *pp;
+
+	pp = (unsigned short *)0x0dff096;
+	*pp = 0x0001;	/* DMA OFF (ch0) */
+}
+
 int main(void)
 {
 	long i = 0;
 	unsigned long *pointer, *pointer2;
 
-//	APTR base_address = 0x00020000L;
-//	APTR sprite_address = 0x00021000L;
-//	APTR bitplane_address = 0x00022000L;
+//	base_address = 0x00020000L;
+//	sprite_address = 0x00021000L;
+//	bitplane_address = 0x00022000L;
+	bitplane_address = AllocMem(BITPLANE_SIZE * BITPLANE_NUM, MEMF_CHIP | MEMF_CLEAR);
+	if (!bitplane_address) {
+//		printf("cannot open lowlevel.library\n");
+		return 10;
+	}
+	rawbuffer = AllocMem(rawsize, MEMF_CHIP | MEMF_CLEAR);
+	if (!rawbuffer) {
+//		printf("cannot open lowlevel.library\n");
+		return 10;
+	}
+	base_address = AllocMem((BITPLANE_NUM + SPRITE_NUM + 1) * 8, MEMF_CHIP | MEMF_CLEAR);
+	if (!base_address) {
+//		printf("cannot open lowlevel.library\n");
+		return 10;
+	}
+	sprite_address = AllocMem( SPRITE_SIZE * SPRITE_NUM, MEMF_CHIP | MEMF_CLEAR );
+	if (!sprite_address) {
+//		printf("cannot open lowlevel.library\n");
+		return 10;
+	}
 
-	APTR base_address = AllocMem((BITPLANE_NUM + SPRITE_NUM + 1) * 8, MEMF_CHIP | MEMF_CLEAR);
-	APTR sprite_address = AllocMem( SPRITE_SIZE * SPRITE_NUM, MEMF_CHIP | MEMF_CLEAR );
-	APTR bitplane_address = AllocMem(BITPLANE_SIZE * BITPLANE_NUM, MEMF_CHIP | MEMF_CLEAR);
 
 	struct Library *LowLevelBase = OpenLibrary("lowlevel.library", 39L);
 	if (!LowLevelBase) {
@@ -784,16 +873,19 @@ int main(void)
 //	pointer = (unsigned long *)bitplane_address; //0x22000L;
 	i = BITPLANE_SIZE - 4; //SCREEN_WIDTH * SCREEN_HEIGHT / 8 - 4;
 	do{
-		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 0)) = 0;
-		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 1)) = 0; //xffffffffL;
-		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 2)) = 0;
-		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 3)) = 0;
+		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 0)) = 0; //xffffffffL;
+		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 1)) = 0; //xffffffffL; //xffffffffL;
+		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 2)) = 0; //xffffffffL;
+		*((unsigned long *)(unsigned char *)(bitplane_address + i + BITPLANE_SIZE * 3)) = 0x0; //ffffffffL;
 	}while((i-=4) >= 0);
+
 
 //	sc5_load("RAINCHR5.SC5", 0, 0, 16*3, (ULONG)bitplane_address, BITPLANE_SIZE); //212);
 	sc5_load("RAINCHR5.SC5", 0, 0, 16*3, (ULONG)&bg_buffer[0][0][0], (SCREEN_WIDTH / 8 * 16 * 3)); //bitplane_address); //212);
 //	sc5_load("FONTYOKO.SC5", 0, 0, 8*4, (ULONG)bitplane_address, BITPLANE_SIZE); //212);
 	sc5_load("FONTYOKO.SC5", 0, 0, 8*4, (ULONG)&font_buffer[0][0][0], (SCREEN_WIDTH / 8 * 8 * 4)); //bitplane_address); //212);
+
+	raw_load("se1.raw", rawbuffer, rawsize);
 
 /*
 	ULONG vram_adr;
@@ -839,8 +931,10 @@ int main(void)
 		int enemy_speed = 2;
 
 		int count = 0;
+		int seflag = 0;
+		int secounter = 0;
 
-		score_displayall((ULONG)bitplane_address);
+		score_displayall();
 //		combo_display();
 
 		while (!game_over) {
@@ -923,6 +1017,10 @@ int main(void)
 						set_sprite(b+1, 0, 0);
 						set_sprite(e+4, 0, 0);
 
+//						if(!secounter)
+//						if(!seflag)
+							seoff();
+							seflag = 1;
 						// Plus生成
 //						for (int p = 0; p < 1; p++) {
 //							if (!pluses[e].active) {
@@ -987,29 +1085,41 @@ int main(void)
 				}
 			}
 //			while(((Custom.vhposr / 256))); // == 0x20));
+
+			WaitTOF();
+			set_sprite_all(sprite_address);
+			if(seflag){
+				se();
+				seflag = 0;
+				secounter = 35;
+			}
+			if(secounter){
+				--secounter;
+				if(!secounter)
+					seoff();
+			}
+
 			if(score_disp_flag){
 				score_disp_flag = 0;
-				score_display((ULONG)bitplane_address);
+				score_display();
 			}
 			else if(combo_display_flag){
 				combo_display_flag = 0;
 				if(combo){
-					combo_display((ULONG)bitplane_address);
+					combo_display();
 				}else{
-					hiscore_display_clear((ULONG)bitplane_address);
+					hiscore_display_clear();
 				}
 			}
 
-			WaitTOF();
-			set_sprite_all(sprite_address);
-
-//			put_strings(SCREEN2, 8, 22, "SCORE", CHRPAL_NO, (ULONG)bitplane_address);
+//			put_strings(SCREEN2, 8, 22, "SCORE", CHRPAL_NO);
 //	put_numd(score, 8);
 
 //			*((unsigned char *)0x25001) = player.x;	// H_START
 //			*((unsigned char *)0x25000) = player.y;		// V_START
 //			*((unsigned char *)0x25002) = player.y + 16;	// V_STOP
 		}
+		seoff();
 		for(;;){
 			ULONG joy = ReadJoyPort(1);
 			if(!(joy & JPF_BTN1))
@@ -1017,13 +1127,13 @@ int main(void)
 		}
 		// ゲームオーバー画面
 		/* ここにテキスト描画追加可能 */
-		hiscore_display((ULONG)bitplane_address);
+		hiscore_display();
 		for(;;){
 			ULONG joy = ReadJoyPort(1);
 			if(joy & JPF_BTN1)
 				break;
 		}
-		hiscore_display_clear((ULONG)bitplane_address);
+		hiscore_display_clear();
 		// (スプライト全消し)
 		for (int i = 0; i < 8; i++){
 			set_sprite(i, 0, 0);
@@ -1036,9 +1146,10 @@ int main(void)
 		}
 	}
 
-	FreeMem(bitplane_address, BITPLANE_SIZE * BITPLANE_NUM);
 	FreeMem(sprite_address, SPRITE_SIZE * SPRITE_NUM);
 	FreeMem(base_address, (BITPLANE_NUM + SPRITE_NUM + 1) * 8);
+	FreeMem(rawbuffer, rawsize);
+	FreeMem(bitplane_address, BITPLANE_SIZE * BITPLANE_NUM);
 
 	return(0);
 }

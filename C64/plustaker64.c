@@ -456,6 +456,35 @@ skip:
 			return keycode;
 }
 
+void se(void)
+{
+	unsigned char *s=(unsigned char *)54272;
+	s[4] = 128;			/* stop */
+	for(unsigned char l=0; l<25; ++l)
+		s[l] = 0;
+	s[0] = 24;		/* noise freq. */
+	s[1] = 33;
+	s[5] = 8;		/* A=0,D=8 */
+	s[22] = 112;	/* high cut filter */
+	s[23] = 1;		/* voice1 filter ON */
+	s[24] = 79;		/* volume=15 + High-Pass */
+	s[4] = 129;		/* Noise start */
+}
+
+void seoff(void)
+{
+	unsigned char *s=(unsigned char *)54272;
+	s[4] = 128;			/* stop */
+	for(unsigned char l=0; l<25; ++l)
+		s[l] = 0;
+	s[0] = 0;		/* noise freq. */
+	s[1] = 0;
+	s[5] = 8;		/* A=0,D=8 */
+	s[22] = 112;	/* high cut filter */
+	s[23] = 1;		/* voice1 filter ON */
+	s[24] = 79;		/* volume=15 + High-Pass */
+	s[4] = 129;		/* Noise start */
+}
 
 short x;
 unsigned char y, color;
@@ -611,6 +640,8 @@ int main(void)
 	BITSET(7, *SPRITE_MULTICOLOR_REGISTERS);
 	put_sprite(7, x - 16 * 7, y - 16 * 7, color, 0x0d);
 */
+
+	seoff();
 	// Main Loop
 
 	for(;;){
@@ -731,6 +762,7 @@ int main(void)
 //						enemies[e].active = 0;
 						set_sprite(b+1, 0, 0);
 						set_sprite(e+4, 0, 0);
+						se();
 
 						// Plus¶¬
 //						for (int p = 0; p < 1; p++) {
