@@ -20,16 +20,16 @@ LINKOPTS = -Os -noixemul
 
 #ê∂ê¨éËèá
 
-all:plustaker2
+all:$(TARGET)
 
 clean:
 	rm $(TARGET) $(TARGET).o
 
 OBJFILES = $(TARGET).o
 
-plustaker2 : $(OBJFILES)
+$(TARGET) : $(OBJFILES)
 	$(CC) $(LINKOPTS) $(OBJFILES) -o $(TARGET)
 # -lamiga
-	adf.bat $(TARGET) RAINCHR5.SC5 FONTYOKO.SC5
+	adf.bat $(TARGET) RAINCHR5.SC5 FONTYOKO.SC5 se1.raw
 
 $(TARGET) : $(TARGET).c
