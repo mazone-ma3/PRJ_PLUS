@@ -409,6 +409,12 @@ int main(void)
 				for (int e = 0; e < 4; e++) {
 					if (pluses[e].active) continue;
 					if (!enemies[e].active) continue;
+
+					if (abs(bullets[b].x - enemies[e].x) > 64)
+						continue;
+					if( abs(bullets[b].y - enemies[e].y) > 64)
+						continue;
+
 					if (abs(bullets[b].x - enemies[e].x) < 16 && abs(bullets[b].y - enemies[e].y) < 16) {
 						bullets[b].active = 0;
 //						enemies[e].active = 0;

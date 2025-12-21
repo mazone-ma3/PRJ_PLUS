@@ -22,6 +22,9 @@
 
 #include <clib/graphics_protos.h>
 
+extern int my_mod(int a, int b) __attribute__((regparm(2)));
+extern int my_div(int a, int b) __attribute__((regparm(2)));
+
 /************************************************************************/
 /*		BIT操作マクロ定義												*/
 /************************************************************************/
@@ -534,6 +537,7 @@ long get_mod10(long n) {
     return res; //(res >= 10) ? res - 10 : res;
 }
 */
+/*
 int get_mod10(int n) {
     // 0.1 をバイナリで近似して掛け算し、10で割った商を求める
 	int res;
@@ -544,7 +548,7 @@ int get_mod10(int n) {
     q = q >> 3; 
     res = n - ((q << 3) + (q << 1)); // n - (q * 10)
     return (res >= 10) ? res - 10 : res;
-}
+}*/
 
 /*
 long divide_by_10(long n) {
@@ -555,24 +559,27 @@ long divide_by_10(long n) {
     q = q + (q >> 16);
     return q >> 3; // 最終的に調整して商を出す
 }*/
-
+/*
 int divide_by_10(int32_t n) {
     // 0x66666667 は (2^34)/10 を切り上げた値
     int64_t magic = 0x66666667LL; 
     return (int32_t)((n * magic) >> 34);
-}
+}*/
 
-void put_numd(long j, unsigned char digit)
+void put_numd(int j, unsigned char digit)
 {
 	unsigned char i = digit;
-	long mod = 0;
+	int mod = 0;
 
 	while(i--){
-		mod = get_mod10(j);
+//		mod = modsi3(j, 10);
+		mod = my_mod(j, 10);
+//		mod = j % 10; //get_mod10(j);
 //		if(mod >= 10)
 //			mod = 0;
 		str_temp[i] = mod + 0x30;
-		j = divide_by_10(j);
+//		j = divide_by_10(j);
+		j = my_div(j, 10);
 	}
 	str_temp[digit] = '\0';
 }
@@ -582,7 +589,8 @@ void score_display(void)
 	put_numd(score, 8);
 	put_strings(SCREEN2, 19, 22 , str_temp, CHRPAL_NO);
 	if(score >= hiscore){
-		if((get_mod10(score)) == 0){
+//		if((get_mod10(score)) == 0){
+		if((my_mod(score, 10)) == 0){
 			hiscore = score;
 			put_strings(SCREEN2, 12, 22, "HIGH ", CHRPAL_NO);
 		}
