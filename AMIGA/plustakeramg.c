@@ -694,7 +694,7 @@ void set_copperl(ULONG bitplane_address, ULONG sprite_address)
 	}
 }
 
-#define rawsize 5000 //6600
+#define rawsize 2000
 
 APTR rawbuffer;
 
@@ -722,10 +722,11 @@ void se(void)
 
 	p = (unsigned int *)0x0dff0a0;
 	*p = (unsigned int)rawbuffer;	/* ch.0 address */
+
 	pp = (unsigned short *)0x0dff0a4;
-	*pp = 6500;	/* length */
+	*pp = 1600;	/* length */
 	pp = (unsigned short *)0x0dff0a6;
-	*pp = 700;	/* pitch */
+	*pp = 447;	/* pitch */
 	pp = (unsigned short *)0x0dff0a8;
 	*pp = 64;	/* volume(0-64)  */
 	pp = (unsigned short *)0x0dff096;
@@ -1091,7 +1092,7 @@ int main(void)
 			if(seflag){
 				se();
 				seflag = 0;
-				secounter = 35;
+				secounter = 8;
 			}
 			if(secounter){
 				--secounter;
