@@ -24,6 +24,9 @@ __asm\
 __endasm;\
 }
 
+void set_int(void);
+void reset_int(void);
+
 /************************************************************************/
 /*		BITëÄçÏÉ}ÉNÉçíËã`												*/
 /************************************************************************/
@@ -180,11 +183,21 @@ void hiscore_display_clear(void)
 
 char sprite_pattern_no[8], sprite_color_no[8][2];
 int spr_x[8], spr_y[8];
+int spr_x_new[8], spr_y_new[8];
 
 void set_sprite(char num, int posx, int posy)
 {
-	spr_x[num] = posx - 16;
-	spr_y[num] = posy - 16 + 1;
+	spr_x_new[num] = posx - 16;
+	spr_y_new[num] = posy - 16 + 1;
+}
+
+void put_sprite(void)
+{
+	char i;
+	for(i = 0; i < 8; ++i){	
+		spr_x[i] = spr_x_new[i];
+		spr_y[i] = spr_y_new[i];
+	}
 }
 
 char patternno_table[3] = {0, 12, 8};
@@ -198,6 +211,7 @@ void set_sprite_pattern(int num, int no) {
 
 void set_sprite_all(void) {
 	char i, spr_count = 0;
+//	DI();
 	for(i = 0; i < 8; ++i){
 //		put_sprite(i, spr_x[i], spr_y[i], sprite_color_no[i], sprite_pattern_no[i]);
 		vdp_put_sprite_16(spr_count++, spr_x[i],  spr_y[i], sprite_pattern_no[i], sprite_color_no[i][0]);
@@ -205,6 +219,7 @@ void set_sprite_all(void) {
 			vdp_put_sprite_16(spr_count++, spr_x[i],  spr_y[i], sprite_pattern_no[i] + 4, sprite_color_no[i][1]);
 	}
 	vdp_put_sprite_16(spr_count++, 0,  208, 0, 0);
+//	EI();
 }
 
 void set_se(void)
@@ -225,6 +240,7 @@ unsigned char y, color;
 unsigned char i = 0, keycode, oldcharset, data = 0;
 short j;
 
+volatile char spr_flag = 1;
 
 int main(void)
 {
@@ -254,7 +270,6 @@ int main(void)
 		vpoke(i + 8 * 'a', block[i]);
 
 	vpoke(0x2000 + 'a' / 8, 8 * 16 + 9);
-
 	for(i = 0; i < 32; ++i){
 		put_strings(i, 18, "a", 0);
 		put_strings(i, 19, "a", 0);
@@ -281,6 +296,7 @@ int main(void)
 		set_sprite_pattern(i, patno);
 	}
 	set_sprite_all();
+//	set_int();
 
 	// Main Loop
 
@@ -305,6 +321,8 @@ int main(void)
 		old_jiffy = *jiffy;
 
 		score_displayall();
+		set_int();
+
 //		combo_display();
 		while (!game_over) {
 			++count;
@@ -461,10 +479,13 @@ int main(void)
 				}
 			}
 
-			old_jiffy = *jiffy;
-			while(*jiffy == old_jiffy);
 //			old_jiffy = *jiffy;
-			set_sprite_all();
+			while(*jiffy == old_jiffy);
+			old_jiffy = *jiffy;
+			DI();
+//			set_sprite_all();
+			put_sprite();
+			spr_flag = 1;
 
 			if(score_display_flag){
 				score_display_flag = 0;
@@ -477,8 +498,11 @@ int main(void)
 				else
 					hiscore_display_clear();
 			}
+			EI();
 
 		}
+		reset_int();
+		set_sprite_all();
 		for(;;){
 			if(!((get_trigger(0) | get_trigger(1)) & 0x01))	/* SHOT */
 				break;
@@ -502,6 +526,116 @@ int main(void)
 		}
 	}
 end:
+//	reset_int();
 
 	return 0;
+}
+
+unsigned char vdps0;
+
+unsigned char INTWORK[5];
+
+void intvsync(void)
+{
+__asm
+;intvsync:
+	ld	(_vdps0),a
+	push	af
+;	push	ix
+__endasm;
+
+	if(spr_flag == 1){
+		spr_flag = 0;
+		set_sprite_all();
+/*
+//		set_spr_atr_adr(spr_next); 
+//		write_VDP(11, ((spr_next << 1) & 0x02));
+__asm
+	ld	a,(_VDP_writeadr)
+	inc	a
+	ld	c,a
+	ld	a,(_spr_next)
+	add	a,a
+	and	a,#0x02
+	out	(c),a
+	ld	a,11 | 0x80
+	out	(c),a
+__endasm;
+*/
+	}
+__asm
+;	pop	ix
+	pop	af
+	jp	_INTWORK
+;INTWORK:
+;	DB	0,0,0,0,0
+__endasm;
+}
+
+void set_int(void)
+{
+#ifndef SINGLEMODE
+__asm
+	DI
+;	PUSH	IY
+;	PUSH	HL
+;	PUSH	DE
+;	PUSH	BC
+	LD	IY,-609
+	PUSH	IY
+	POP	HL
+	LD	DE,_INTWORK
+	LD	BC,5
+	LDIR
+	LD	HL,_intvsync
+
+	LD	(IY+0),0C3H
+	LD	(IY+1),L
+	LD	(IY+2),H
+
+	EI
+	ret
+
+	LD	(IY+2),L
+	LD	(IY+3),H
+
+	LD	(IY+0),0F7H
+	LD	(IY+4),0C9H
+
+	ld	a,h
+	ld	hl,#0xf341	;slot0
+	cp	#0x40
+	jr	c,slotset
+	inc	hl			;slot1
+	cp	#0x80
+	jr	c,slotset
+	inc	hl			;slot2
+	cp	#0xc0
+	jr	c,slotset
+	inc	hl			;slot3
+slotset:
+	LD	A,(HL)
+	LD	(IY+1),A
+
+;	POP	BC
+;	POP	DE
+;	POP	HL
+;	POP	IY
+	EI
+__endasm;
+#endif
+}
+
+void reset_int(void)
+{
+#ifndef SINGLEMODE
+__asm
+	DI
+	LD	HL,_INTWORK
+	LD	DE,-609
+	LD	BC,5
+	LDIR
+	EI
+__endasm;
+#endif
 }
