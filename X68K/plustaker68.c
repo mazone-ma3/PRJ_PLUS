@@ -1211,7 +1211,6 @@ dum:	_iocs_b_super(0);		/* スーパーバイザモード 最適化防止にラベルを付ける */
 			spr_count = 0;
 			for(i = 0; i < 8; ++i){
 				DEF_SP_SINGLE(spr_count, spr_x[i], spr_y[i], sprite_pattern_no[i], CHRPAL_NO, 0, 0);
-				++spr_count;
 			}
 
 			wait_vsync();
