@@ -19,10 +19,15 @@ z88dkでコンパイルしてください。
 
 elf2x68kでコンパイルしてください。実行には.SC5ファイルと.PCMファイルが必要です。
 
+・FM TOWNS版
+
+FM TOWNS-gcc クロスコンパイル環境でコンパイルしてください。実行には.SC5ファイルと.SNDファイルが必要です。
+
 WebMSX:
 https://webmsx.org/?MACHINE=MSX2PJ&rom=https://github.com/mazone-ma3/PRJ_PLUS/raw/refs/heads/main/MSX1/plustakermsx.rom
 
 <img width="2880" height="1920" alt="タイトルなし_" src="https://github.com/user-attachments/assets/a100e02f-6d43-40f3-bba3-9aeeaf21ec40" />
+
 
 
 
