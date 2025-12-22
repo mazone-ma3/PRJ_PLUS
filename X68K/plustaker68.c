@@ -3,7 +3,7 @@
 //#define XSP
 
 #define SCREEN_WIDTH (256)
-#define SCREEN_HEIGHT (240)
+#define SCREEN_HEIGHT (256)
 
 #include <stdint.h>
 #include <stdio.h>
@@ -568,19 +568,13 @@ void set_sprite(int num, int posx, int posy) {
 
 #ifdef XSP
 
+/*void set_sprite_all(void)
+{
+}*/
+
 void set_sprite_all(void)
 {
-}
-
-void set_sprite_new(void)
-{
 	int i;
-
-	spr_count = 0;
-	for(i = 0; i < 8; ++i){
-		DEF_SP_SINGLE(spr_count, spr_x[i], spr_y[i], sprite_pattern_no[i], CHRPAL_NO, 0, 0);
-		++spr_count;
-	}
 
 	for(i = 0; i < spr_count; i++)
 		/* スプライトの表示登録 */
@@ -618,11 +612,6 @@ void set_sprite_all(void)
 	int i, j;
 
 //	wait_vsync();
-	spr_count = 0;
-	for(i = 0; i < 8; ++i){
-		DEF_SP_SINGLE(spr_count, spr_x[i], spr_y[i], sprite_pattern_no[i], CHRPAL_NO, 0, 0);
-		++spr_count;
-	}
 
 /* スプライト表示 */
 	spdata = //(unsigned short *)&chr_data2[spr_page]; //
@@ -800,8 +789,8 @@ void set_sprite_new(void);
 void wait_vsync(void)
 {
 	/* 垂直同期 */
-		xsp_vsync2(2);
-		set_sprite_new();
+	xsp_vsync2(2);
+//	set_sprite_new();
 }
 
 #else
@@ -1073,7 +1062,7 @@ dum:	_iocs_b_super(0);		/* スーパーバイザモード 最適化防止にラベルを付ける */
 //			ULONG joy =ReadJoyPort(1);
 			keycode = keyscan();
 
-			// 移動 (仮にキーボードor joy direct)
+			// 移動 (キーボードor joy direct)
 			if (keycode & KEY_UP1) player.y -= 3;  // up
 			if (keycode & KEY_DOWN1) player.y += 3;  // down
 			if (keycode & KEY_LEFT1) player.x -= 3;  // left
@@ -1218,9 +1207,12 @@ dum:	_iocs_b_super(0);		/* スーパーバイザモード 最適化防止にラベルを付ける */
 						game_over = 1;
 				}
 			}
-//			while(((Custom.vhposr / 256))); // == 0x20));
 
-//			WaitTOF();
+			spr_count = 0;
+			for(i = 0; i < 8; ++i){
+				DEF_SP_SINGLE(spr_count, spr_x[i], spr_y[i], sprite_pattern_no[i], CHRPAL_NO, 0, 0);
+				++spr_count;
+			}
 
 			wait_vsync();
 
@@ -1252,9 +1244,6 @@ dum:	_iocs_b_super(0);		/* スーパーバイザモード 最適化防止にラベルを付ける */
 //			put_strings(SCREEN2, 8, 22, "SCORE", CHRPAL_NO);
 //	put_numd(score, 8);
 
-//			*((unsigned char *)0x25001) = player.x;	// H_START
-//			*((unsigned char *)0x25000) = player.y;		// V_START
-//			*((unsigned char *)0x25002) = player.y + 16;	// V_STOP
 		}
 //		seoff();
 		for(;;){
