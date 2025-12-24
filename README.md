@@ -29,12 +29,13 @@ z88dkでコンパイルしてください。実行には.MSXファイルと.SC5�
 
 ・PC-88VA版
 
-OpenWatcomでコンパイルしてください。実行には.SC5ファイルが必要です。
+OpenWatcomでコンパイルしてください。実行には.SC5ファイルが必要です。PCEPAT.SYSを組み込んでください。
 
 WebMSX:
 https://webmsx.org/?MACHINE=MSX2PJ&rom=https://github.com/mazone-ma3/PRJ_PLUS/raw/refs/heads/main/MSX1/plustakermsx.rom
 
 <img width="2880" height="1920" alt="タイトルなし_" src="https://github.com/user-attachments/assets/a100e02f-6d43-40f3-bba3-9aeeaf21ec40" />
+
 
 
 
