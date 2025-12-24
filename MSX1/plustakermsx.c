@@ -63,7 +63,7 @@ void reset_int(void);
 
 
 // White (Code=15)
-unsigned char spr0[] = {
+static unsigned char spr0[] = {
 	0x00, 0x00, 0x03, 0x04, 0x00, 0x00, 0x05, 0x05,
 	0x03, 0x0f, 0x30, 0x30, 0x08, 0x07, 0x00, 0x00,
 	0x00, 0x00, 0xc0, 0x20, 0x00, 0x00, 0xa0, 0xa0,
@@ -71,7 +71,7 @@ unsigned char spr0[] = {
 };
 
 // Yellow(Code=10 or 11)
-unsigned char spr1[] = {
+static unsigned char spr1[] = {
 	0x00, 0x03, 0x04, 0x0b, 0x0e, 0x0a, 0x08, 0x08,
 	0x00, 0x00, 0x0f, 0x0f, 0x07, 0x00, 0x0e, 0x0e,
 	0x00, 0xc0, 0x20, 0xd0, 0xf0, 0xd0, 0x10, 0x10,
@@ -79,21 +79,21 @@ unsigned char spr1[] = {
 };
 
 
-unsigned char spr2[] = {
+static unsigned char spr2[] = {
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
-unsigned char spr3[] = {
-	0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
+static unsigned char spr3[] = {
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0,
+	0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-unsigned char block[] = {
+static unsigned char block[] = {
 	0x80,0x80,0x80,0xff,0x08,0x08,0x08,0xff,
 };
 
@@ -103,6 +103,178 @@ typedef struct {
 	int active;
 } Entity;
 
+enum {
+	VDP_READDATA = 0,
+	VDP_READSTATUS = 1
+};
+
+enum {
+	VDP_WRITEDATA = 0,
+	VDP_WRITECONTROL = 1,
+	VDP_WRITEPAL = 2,
+	VDP_WRITEINDEX = 3
+};
+
+#define VDP_readport(no) (VDP_readadr + no)
+#define VDP_writeport(no) (VDP_writeadr + no)
+
+unsigned char VDP_readadr;
+unsigned char VDP_writeadr;
+
+/* mainromの指定番地の値を得る */
+unsigned char  read_mainrom(unsigned short adr) __sdcccall(1)
+{
+__asm
+	ld	a,(#0xfcc1)	; exptbl
+	call	#0x000c	; RDSLT
+__endasm;
+}
+
+/* screenのBIOS切り替え */
+void set_screenmode(unsigned char mode) __sdcccall(1)
+{
+__asm
+;	ld	 hl, 2
+;	add	hl, sp
+
+	push	ix
+	ld	b,a
+
+	ld	a,(#0xfcc1)	; exptbl
+	ld	d,a
+	ld	e,0
+	push	de
+	pop	iy
+	ld ix,#0x005f	; CHGMOD(MAINROM)
+
+;	ld	a, (hl)	; a = mode
+	ld	a,b
+
+	call	#0x001c	; CALSLT
+	pop	ix
+__endasm;
+}
+
+void write_VDP(unsigned char regno, unsigned char data) __sdcccall(1)
+{
+//	outp(VDP_writeport(VDP_WRITECONTROL), data);
+//	outp(VDP_writeport(VDP_WRITECONTROL), 0x80 | regno);
+__asm
+
+
+	ld	h,a
+	ld	a,(_VDP_writeadr)
+	inc	a
+	ld	c,a
+	ld	a,l
+	out	(c),a
+
+;	EX  (SP), HL    ; 19ステート（スタック操作を利用した時間稼ぎの定番）
+    PUSH HL         ; 11ステート
+    POP  HL         ; 10ステート
+    PUSH HL         ; 11ステート
+    POP  HL         ; 10ステート
+
+	ld	a,h
+	set 7,a
+	out	(c),a
+
+;    PUSH HL         ; 11ステート
+;    POP  HL         ; 10ステート
+;    PUSH HL         ; 11ステート
+;    POP  HL         ; 10ステート
+
+
+__endasm;
+}
+
+void write_vram_adr(unsigned char highadr, int lowadr) __sdcccall(1)
+{
+__asm
+	push	de
+__endasm;
+//	MSX1(TMS9918)では不要
+//	write_VDP(14, (((highadr  << 2) & 0x04) | (lowadr >> 14) & 0x03));
+__asm
+	pop	de
+	ld	a,(_VDP_writeadr)
+	inc	a
+	ld	c,a
+	out	(c),e
+	ld	a,d
+	and	a,0x3f
+	set	6,a
+	out	(c),a
+__endasm;
+//	outp(VDP_writeport(VDP_WRITECONTROL), (lowadr & 0xff));
+//	outp(VDP_writeport(VDP_WRITECONTROL), 0x40 | ((lowadr >> 8) & 0x3f));
+}
+
+void write_vram_data(unsigned char data) __sdcccall(1)
+{
+__asm
+//	outp(VDP_writeport(VDP_WRITEDATA), data);
+	ld	b,a
+	ld	a,(_VDP_writeadr)
+	ld	c,a
+	out	(c),b
+__endasm;
+}
+
+void read_vram_adr(unsigned char highadr, int lowadr) __sdcccall(1)
+{
+__asm
+	push	de
+__endasm;
+//	write_VDP(14, (((highadr  << 2) & 0x04) | (lowadr >> 14) & 0x03));
+__asm
+	pop	de
+	ld	a,(_VDP_writeadr)
+	inc	a
+	ld	c,a
+	out	(c),e
+	ld	a,d
+	and	a,0x3f
+	out	(c),a
+__endasm;
+//	outp(VDP_writeport(VDP_WRITECONTROL), (lowadr & 0xff));
+//	outp(VDP_writeport(VDP_WRITECONTROL), 0x00 | ((lowadr >> 8) & 0x3f));
+}
+
+unsigned char read_vram_data(void) __sdcccall(1)
+{
+__asm
+	ld	a,(_VDP_readadr)
+	ld	c,a
+	in	a,(c)
+__endasm;
+//	return inp(VDP_readport(VDP_READDATA));
+}
+
+void VPOKE(unsigned short lowadr, unsigned char data) __sdcccall(1)
+{
+//	return;
+	DI();
+	write_vram_adr(0, lowadr);
+	write_vram_data(data);
+	EI();
+/*	DI();
+__asm
+	push	af
+;	ld	a,d
+	call	0x004d
+	pop	af
+__endasm;*/
+	EI();
+}
+
+inline unsigned char VPEEK(unsigned short lowadr) {
+	DI();
+	read_vram_adr(0, lowadr);
+	return read_vram_data();
+	EI();
+}
+
 static void put_strings(unsigned char x, unsigned char y,  char *str, unsigned char pal)
 {
 	char chr;
@@ -111,7 +283,7 @@ static void put_strings(unsigned char x, unsigned char y,  char *str, unsigned c
 	while((chr = *(str++)) != '\0'){
 		if((chr < 0x30)) //|| (chr > 0x5f))
 			chr = 0x20;
-		vpoke(vramadr++, chr);
+		VPOKE(vramadr++, chr);
 	}
 }
 
@@ -209,16 +381,25 @@ void set_sprite_pattern(int num, int no) {
 	sprite_color_no[num][1] = patterncolor_table[no * 2 + 1];
 }
 
+inline void VDP_put_sprite_16(unsigned char spr_count, unsigned char x, unsigned char y, unsigned char no, unsigned char color)
+{
+	y-=2;
+	VPOKE(0x1b00 + 0 + spr_count * 4, y);
+	VPOKE(0x1b00 + 1 + spr_count * 4, x);
+	VPOKE(0x1b00 + 2 + spr_count * 4, no);
+	VPOKE(0x1b00 + 3 + spr_count * 4, color);
+}
+
 void set_sprite_all(void) {
 	char i, spr_count = 0;
 //	DI();
 	for(i = 0; i < 8; ++i){
 //		put_sprite(i, spr_x[i], spr_y[i], sprite_color_no[i], sprite_pattern_no[i]);
-		vdp_put_sprite_16(spr_count++, spr_x[i],  spr_y[i], sprite_pattern_no[i], sprite_color_no[i][0]);
+		VDP_put_sprite_16(spr_count++, spr_x[i],  spr_y[i], sprite_pattern_no[i], sprite_color_no[i][0]);
 		if(sprite_pattern_no[i] == 0)
-			vdp_put_sprite_16(spr_count++, spr_x[i],  spr_y[i], sprite_pattern_no[i] + 4, sprite_color_no[i][1]);
+			VDP_put_sprite_16(spr_count++, spr_x[i],  spr_y[i], sprite_pattern_no[i] + 4, sprite_color_no[i][1]);
 	}
-	vdp_put_sprite_16(spr_count++, 0,  208, 0, 0);
+	VDP_put_sprite_16(spr_count++, 0,  208, 0, 0);
 //	EI();
 }
 
@@ -242,34 +423,87 @@ short j;
 
 volatile char spr_flag = 1;
 
+int spawn_timer = 0;
+int combo_timer = 0;
+int wave = 1;
+int enemies_killed_this_wave = 0;
+int game_over = 0;
+int score_display_flag = 0;
+int combo_display_flag = 0;
+int enemy_speed = 2;
+
+int count = 0;
+char k;
+
+Entity player = {160 - 8, 160 - 16};
+Entity bullets[3] = {{0}};
+Entity enemies[4] = {{0}};
+Entity pluses[8] = {{0}};  // Plus最大8個
+
+int e,b,p;
+
+unsigned char *pdata;
+unsigned char *padr;
+
+void VDP_set_sprite_16(unsigned char chr, unsigned char *data)
+{
+	pdata = (unsigned char *)data;
+	padr = (unsigned char *)0x03800 + chr * 8;
+//	padr = (unsigned char *)0x0 + chr * 8;
+/*	for(i = 0; i < 32; ++i){
+		VPOKE(0x03800L + chr * 8 + i, data[i]);
+	}
+	return;*/
+__asm
+	ld	hl,(_pdata)
+	ld	de,(_padr)
+	ld	bc,32
+	call	0x005c
+__endasm;
+}
+
 int main(void)
 {
+	VDP_readadr = read_mainrom(0x0006);
+	VDP_writeadr = *((unsigned char *)0x0007);//read_mainrom(0x0007);
+
 	*clicksw = 0;
 
 	vdp_color(15, 1, 1);
-	vdp_set_mode(mode_1);
+//	vdp_set_mode(mode_1);
+	set_screenmode(1);
 //#define set_mangled_mode() msx_set_mangled_mode()
 
-	vdp_set_sprite_mode(sprite_large);
-	vdp_set_sprite_16(0, spr0);
-	vdp_set_sprite_16(4, spr1);
-	vdp_set_sprite_16(8, spr2);
-	vdp_set_sprite_16(12, spr3);
+//	; RG6SAV を 7 に書き換える
+//	*((unsigned char *)0xf3e5) = 7;
+//	write_VDP(6, 0x7);
 
-	vdp_put_sprite_16(0, 0,0, 0,15);
-	vdp_put_sprite_16(1, 0,0, 4,10);
+	vdp_set_sprite_mode(sprite_large);
+	DI();
+
+	VDP_set_sprite_16(0, spr0);
+	VDP_set_sprite_16(4, spr1);
+	VDP_set_sprite_16(8, spr2);
+	VDP_set_sprite_16(12, spr3);
+
+	EI();
 
 	for(j = '0'; j < 'Z'; ++j){
 		for(i = 0; i < 8; ++i){
-			char k =vpeek(i + 8  * j);
-			vpoke(i + 8 * j, k | k << 1);
+			k =VPEEK(i + 8  * j);
+//			VPOKE(i + 8 * j, k << (i / 4));
+			VPOKE(i + 8 * j, k | k << 1);
 		}
 	}
 
-	for(i = 0; i < 8; ++i)
-		vpoke(i + 8 * 'a', block[i]);
+//	vdp_put_sprite_16(0, 0,0, 0,15);
+//	vdp_put_sprite_16(1, 0,0, 4,10);
 
-	vpoke(0x2000 + 'a' / 8, 8 * 16 + 9);
+
+	for(i = 0; i < 8; ++i){
+		VPOKE(0x2000 + 'a' / 8, 8 * 16 + 9);
+	}
+
 	for(i = 0; i < 32; ++i){
 		put_strings(i, 18, "a", 0);
 		put_strings(i, 19, "a", 0);
@@ -295,35 +529,37 @@ int main(void)
 		}
 		set_sprite_pattern(i, patno);
 	}
-	set_sprite_all();
+//	set_sprite_all();
 //	set_int();
 
 	// Main Loop
-
 	for(;;){
-		Entity player = {160 - 8, 160 - 16};
-		Entity bullets[3] = {{0}};
-		Entity enemies[4] = {{0}};
-		Entity pluses[8] = {{0}};  // Plus最大8個
+		player.x = 160 - 8;
+		player.y = 160 - 16;
+		for(i = 0; i < 4; ++i)
+			bullets[i].active = 0;
+		for(i = 0; i < 4; ++i)
+			enemies[i].active = 0;
+		for(i = 0; i < 8; ++i)
+			pluses[i].active = 0;  // Plus最大8個
 
 		score = 0;
 		combo = 0;
-		int spawn_timer = 0;
-		int combo_timer = 0;
-		int wave = 1;
-		int enemies_killed_this_wave = 0;
-		int game_over = 0;
-		int score_display_flag = 0;
-		int combo_display_flag = 0;
-		int enemy_speed = 2;
+		spawn_timer = 0;
+		combo_timer = 0;
+		wave = 1;
+		enemies_killed_this_wave = 0;
+		game_over = 0;
+		score_display_flag = 0;
+		combo_display_flag = 0;
+		enemy_speed = 2;
 
-		int count = 0;
+		count = 0;
 		old_jiffy = *jiffy;
 
 		score_displayall();
 		set_int();
 
-//		combo_display();
 		while (!game_over) {
 			++count;
 			if(combo)
@@ -346,7 +582,6 @@ int main(void)
 //				goto end;
 //			}
 
-
 			player.x = MAX(16, MIN(((SCREEN_WIDTH)), player.x));
 			player.y = MAX(16, MIN(((SCREEN_HEIGHT)), player.y));
 
@@ -354,7 +589,7 @@ int main(void)
 
 			// 射撃 (ボタン押したら弾発射)
 			if((get_trigger(0) | get_trigger(1)) & 0x01){	/* SHOT */
-				for (int i = 0; i < 3; i++) {
+				for (i = 0; i < 3; i++) {
 					if (!bullets[i].active) {
 						bullets[i].active = 1;
 						bullets[i].x = player.x;
@@ -365,7 +600,7 @@ int main(void)
 			}
 
 			// 弾更新
-			for (int i = 0; i < 3; i++) {
+			for (i = 0; i < 3; i++) {
 				if (bullets[i].active) {
 					bullets[i].y -= 8;
 					if (bullets[i].y < 0) bullets[i].active = 0;
@@ -378,7 +613,7 @@ int main(void)
 		// 敵スポーン&更新
 			if (++spawn_timer > 10) {
 				spawn_timer = 0;
-				for (int i = 0; i < 4; i++) {
+				for (i = 0; i < 4; i++) {
 					if (!enemies[i].active) {
 						enemies[i].active = 1;
 						enemies[i].x = 16 + ((rand() & ((SCREEN_WIDTH - 16))));
@@ -388,7 +623,7 @@ int main(void)
 				}
 			}
 
-			for (int i = 0; i < 4; i++) {
+			for (i = 0; i < 4; i++) {
 				if (enemies[i].active) {
 					if (!pluses[i].active) {
 						set_sprite_pattern(i+4, 2);
@@ -404,9 +639,9 @@ int main(void)
 			}
 
 			// 衝突判定: 弾 vs 敵
-			for (int b = 0; b < 3; b++) {
+			for (b = 0; b < 3; b++) {
 				if (!bullets[b].active) continue;
-				for (int e = 0; e < 4; e++) {
+				for (e = 0; e < 4; e++) {
 					if (pluses[e].active) continue;
 					if (!enemies[e].active) continue;
 
@@ -423,7 +658,7 @@ int main(void)
 						set_se();
 
 						// Plus生成
-//						for (int p = 0; p < 1; p++) {
+//						for (p = 0; p < 1; p++) {
 //							if (!pluses[e].active) {
 								pluses[e].active = 1;
 								pluses[e].x = enemies[e].x;
@@ -451,7 +686,7 @@ int main(void)
 			}
 
 			// Plus取得
-			for (int p = 0; p < 4; p++) {
+			for (p = 0; p < 4; p++) {
 				if (pluses[p].active) {
 					set_sprite_pattern(p+4, 0);
 					pluses[p].y += 1;
@@ -479,7 +714,7 @@ int main(void)
 			}
 
 			// ゲームオーバー (敵接触)
-			for (int e = 0; e < 4; e++) {
+			for (e = 0; e < 4; e++) {
 				if (enemies[e].active && abs(enemies[e].x - player.x) < 16 && abs(enemies[e].y - player.y) < 16) {
 					if(!pluses[e].active)
 						game_over = 1;
@@ -526,7 +761,7 @@ int main(void)
 		}
 		hiscore_display_clear();
 		// (スプライト全消し)
-		for (int i = 0; i < 8; i++){
+		for (i = 0; i < 8; i++){
 			set_sprite(i, 0, 0);
 			set_sprite_all();
 		}
@@ -576,6 +811,7 @@ __endasm;
 __asm
 ;	pop	ix
 	pop	af
+
 	jp	_INTWORK
 ;INTWORK:
 ;	DB	0,0,0,0,0
