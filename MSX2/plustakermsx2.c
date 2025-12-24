@@ -689,7 +689,7 @@ int spr_x[MAX_SPRITE], spr_y[MAX_SPRITE];
 void set_sprite(char num, int posx, int posy)
 {
 	spr_x[num] = posx - 16;
-	spr_y[num] = posy - 16 + 1;
+	spr_y[num] = posy - 16;
 }
 
 
