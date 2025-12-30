@@ -491,8 +491,9 @@ int main(void)
 	for(j = '0'; j < 'Z'; ++j){
 		for(i = 0; i < 8; ++i){
 			k =VPEEK(i + 8  * j);
-//			VPOKE(i + 8 * j, k << (i / 4));
-			VPOKE(i + 8 * j, k | k << 1);
+//			k = k >> ((7-i) / 4);
+			k |= (k >> 1);
+			VPOKE(i + 8 * j, k);
 		}
 	}
 
