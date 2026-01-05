@@ -1,38 +1,53 @@
-# plustaker2 makefile for FM TOWNS-gcc �N���X�R���p�C����
+﻿# --- 設定 ---
+TARGET       = plustakerfmt
+GCCROOT      = C:/tgcc
+BIN          = $(GCCROOT)/bin
+LIB_PATH     = $(GCCROOT)/lib
+INC_PATH     = $(GCCROOT)/include
 
-TARGET = plustakerfmt
+# ツール定義
+CPP          = $(BIN)/cpp
+CC1          = $(BIN)/cc1
+AS           = $(BIN)/as
+LD           = $(BIN)/ld_towns
+GENEXP       = $(BIN)/genexp3
 
-#�}�N��
+# フラグ定義
+CPPFLAGS     = -D__GNUC__ -DTOWNS -I. -I$(INC_PATH)
+CC1FLAGS     = -O -quiet -msoft-float
+LDFLAGS      = -N -S -L$(LIB_PATH) -lTN -lce -lme -lpc
 
-GCCROOT=C:/tgcc
-LIBRARY_PATH=$(GCCROOT)/lib
-C_INCLUDE_PATH=$(GCCROOT)/include
+# 中間ファイル
+OBJS         = $(TARGET).o VSYNC.o
+CRT0         = $(LIB_PATH)/crt0.o
 
-LINK = $(GCCROOT)/bin/ld_towns -N -S -o $@ $(LIBRARY_PATH)/crt0.o
-LINKOPTS = -L$(LIBRARY_PATH) -lTN -lce -lme -lpc 
+# --- ルール ---
 
-# C�\�|�X����obj�쐬
-.SUFFIXES: .o .c
-.c.o:
-	$(GCCROOT)/bin/cpp  -D__GNUC__ -DTOWNS -I. -I $(C_INCLUDE_PATH) $*.c $*.i
-	$(GCCROOT)/bin/cc1 -O -quiet -msoft-float $*.i
-	$(GCCROOT)/bin/as -o $*.o $*.s
+all: $(TARGET).EXP
 
-.SUFFIXES: .o .s
-.s.o:
-	$(GCCROOT)/bin/as -o $*.o $*.s
+# 1. パターンルール（.c -> .o）
+# 中間ファイル .i や .s を自動で処理する流れを定義
+%.o: %.c
+	$(CPP) $(CPPFLAGS) $< $*.i
+	$(CC1) $(CC1FLAGS) $*.i -o $*.s
+	$(AS) -o $@ $*.s
+	@rm -f $*.i $*.s
 
-#�����菇
+# 2. パターンルール（.s -> .o）
+%.o: %.s
+	$(AS) -o $@ $<
 
-all:$(TARGET).EXP
+# 3. リンク（.bin生成）
+$(TARGET).bin: $(OBJS)
+	$(LD) -o $@ $(CRT0) $(OBJS) $(LDFLAGS)
 
-OBJFILES = $(TARGET).o VSYNC.o
+# 4. EXPファイル変換
+$(TARGET).EXP: $(TARGET).bin
+	$(GENEXP) $< $@
 
-$(TARGET).EXP : $(TARGET).bin
-	$(GCCROOT)/bin/genexp3 $(TARGET).bin $(TARGET).EXP
+# --- 依存関係 ---
+$(TARGET).o: $(TARGET).c
+VSYNC.o: VSYNC.s
 
-$(TARGET).bin : $(OBJFILES)
-	$(LINK) $(OBJFILES) $(LINKOPTS)
-
-$(TARGET).o : $(TARGET).c
-VSYNC.o : VSYNC.s
+clean:
+	rm -f *.o *.bin *.EXP *.i *.s

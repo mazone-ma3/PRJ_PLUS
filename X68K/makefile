@@ -1,39 +1,38 @@
-# plustaker2 makefile for X680x0 GCC (elf2x68k) (XSP�I����)
+﻿# --- 設定 ---
+TARGET      = plustaker68
+CC          = m68k-xelf-gcc
+AS          = m68k-xelf-as
 
-TARGET= plustaker68
+# X68000(68000)ターゲット、最適化、文字コード変換（SJIS出力）
+CFLAGS      = -m68000 -O2 -finput-charset=utf-8 -fexec-charset=cp932
+# リンクオプション：0x6800番地開始、シンボル削除、数学ライブラリ
+LDFLAGS     = -Ttext=0x6800 -s -lm
 
-#�}�N��
-CC = m68k-xelf-gcc
+# 中間ファイル
+XSPLIBFILES =  xsp2lib.o pcm8afnc.o
+OBJS        = $(TARGET).o
 
-#CFLAGS =  -O -Wall -g
-CFLAGS = -m68000 -O2 -finput-charset=utf-8 -fexec-charset=cp932
+# --- ルール ---
 
-#LINKOPTS = -liocs -ldos
-# -lsignal
-LINKOPTS = -Ttext=0x6800 -s
-# -specs=x68knodos.specs
+all: $(TARGET).X
 
-.SUFFIXES: .o .c
-.c.o:
-	$(CC) $(CFLAGS) -c $<
+# 1. パターンルール
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-.SUFFIXES: .o .s
-.s.o:
-	m68k-xelf-as -o $*.o $*.s
+%.o: %.s
+	$(AS) -o $@ $<
 
-#�����菇
+# 2. リンク工程
+$(TARGET).X: $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS)
 
-all:$(TARGET).X
+# 3. (おまけ) XSP対応にする場合
+xsp:  $(OBJS)
+	$(CC) $(LDFLAGS) -o $(TARGET)_XSP.X $(OBJS) $(XSPLIBFILES)
+
+# --- 依存関係 ---
+$(TARGET).o: $(TARGET).c inkey.h
 
 clean:
-	rm $(TARGET).o $(TARGET).X
-
-OBJFILES =$(TARGET).o
-
-#XSPLIBFILES = xsp2lib.o pcm8afnc.o
-
-$(TARGET).X : $(OBJFILES)
-	$(CC) $(LINKOPTS) -o $(TARGET).X $(OBJFILES) $(XSPLIBFILES) -lm
-# $(CFLAGS) $(LINKOPTS)
-
-$(TAEGET).o : $(TARGET).c
+	rm -f $(TARGET).o $(TARGET).X

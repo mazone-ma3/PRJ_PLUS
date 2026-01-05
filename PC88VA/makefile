@@ -1,36 +1,36 @@
-# plustaker2 makefile for PC-88VA OpenWatcom
+﻿# --- 設定 ---
+TARGET   = plustakerva
+CC       = wcl
+AS       = wasm
+LD       = wlink
 
-TARGET=plustakerva
+# CFLAGS: -ms (Smallモデル), -bt=dos (DOSターゲット), -ox (最大最適化), -0 (8086用)
+CFLAGS   = -ms -bt=dos -ox -0
+ASFLAGS  = -ms -bt=dos -0
 
-#�}�N��
-CC= wcl
+# 中間ファイル
+OBJS     = $(TARGET).obj
 
-CFLAGS = -ms -bt=dos -ox -0
+# --- ルール ---
 
-# C�\�|�X����obj�쐬
+all: $(TARGET).EXE
 
-.SUFFIXES: .obj .c
-.c.obj:
-	$(CC) -s $< $(CFLAGS)
-#-c
+# 1. パターンルール (.c -> .obj)
+# wcl は -c オプションを付けないとリンクまで行こうとするので注意
+%.obj: %.c
+	$(CC) -c -fo=$@ $(CFLAGS) $<
 
-.SUFFIXES: .obj .asm
-.asm.obj:
-	wasm $< -ms -bt=dos -0
+# 2. パターンルール (.asm -> .obj)
+%.obj: %.asm
+	$(AS) $(ASFLAGS) -fo=$@ $<
 
-#�����菇
+# 3. リンク工程
+# wlink の独自記法を整理
+$(TARGET).EXE: $(OBJS)
+	$(LD) system Dos option quiet name $@ file { $(OBJS) }
 
-all:$(TARGET).EXE
+# --- 依存関係 ---
+$(TARGET).obj: $(TARGET).c inkey.h
 
 clean:
-	rm $(TARGET).EXE $(TARGET).obj
-
-OBJFILES =  $(TARGET).obj
-# test.obj
-
-$(TARGET).EXE : $(OBJFILES)
-	wlink  system Dos option quiet name $(TARGET) file { $(OBJFILES) }
-
-$(TARGET).obj : $(TARGET).c
-
-#test.obj : test.asm
+	rm -f *.obj *.EXE *.err *.map

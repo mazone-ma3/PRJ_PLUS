@@ -1,40 +1,41 @@
-# plustaker2 makefile for AMIGA OS GCC
+﻿# --- 設定 ---
+TARGET      = plustakeramg
+CC          = m68k-amigaos-gcc
+AS          = m68k-amigaos-as
+#SHELL = cmd.exe
 
-TARGET = plustakeramg
+# オプション: -Os (サイズ最適化), -m68000, -msoft-float (FPUなし)
+CFLAGS      = -Os -m68000 -msoft-float
+# リンク: -noixemul (標準ライブラリ依存を避ける), マップファイル出力
+LDFLAGS     = -noixemul -Wl,-Map,$(TARGET).map -m68000
 
-LIBPATH = c:/amiga-gcc/m68k-amigaos/lib/
-LIBPATH2 = c:/amiga-gcc/m68k-amigaos/lib/libb/
-LIBPATH3 = c:/amiga-gcc/lib/gcc/m68k-amigaos/6.5.0b/
+# リソースファイル（adf.batに渡すもの）
+RESOURCES   = RAINCHR5.SC5 FONTYOKO.SC5 se1.raw
 
-#�}�N��
-CC = m68k-amigaos-gcc
+# 中間ファイル
+OBJS        = $(TARGET).o muldiv.o
 
-CFLAGS = -c -Os -m68000 -msoft-float
-LINKOPTS = -noixemul -Wl,-Map,output.map -m68000
+# --- ルール ---
 
-.SUFFIXES: .o .c
-.c.o:
-	$(CC) $(CFLAGS) -o $*.o $<
-#	$(CC) $(CFLAGS) -S -o $*.s $<
-#	m68k-amigaos-as -o $*.o $*.s
+all: $(TARGET)
 
-.SUFFIXES: .o .s
-.s.o:
-	m68k-amigaos-as -o $*.o $*.s
+# 1. パターンルール (.c -> .o)
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-#�����菇
+# 2. パターンルール (.s -> .o)
+%.o: %.s
+	$(AS) -o $@ $<
 
-all:$(TARGET)
+# 3. リンク（実行ファイルの生成）
+$(TARGET): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS)
+#	@echo "--- Creating Amiga Disk Image (ADF) ---"
+	adf.bat $@ $(RESOURCES)
+
+# --- 依存関係 ---
+$(TARGET).o: $(TARGET).c
+muldiv.o: muldiv.s
 
 clean:
-	rm $(TARGET) $(TARGET).o
-
-OBJFILES = $(TARGET).o muldiv.o
-
-
-$(TARGET) : $(OBJFILES)
-	$(CC) $(LINKOPTS)  $(OBJFILES) -o $(TARGET) 
-	adf.bat $(TARGET) RAINCHR5.SC5 FONTYOKO.SC5 se1.raw
-
-$(TARGET).o : $(TARGET).c
-muldiv.o : muldiv.s
+	rm -f $(OBJS) $(TARGET) $(TARGET).map

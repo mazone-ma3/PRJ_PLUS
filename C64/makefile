@@ -1,37 +1,32 @@
-# plustake2 makefile for C64 llvm-cmos
+﻿# --- 設定 ---
+TARGET   = plustaker64
+CC       = mos-c64-clang.bat
 
-TARGET = plustaker64
+# -Os (サイズ最適化)
+CFLAGS   = -Os
+LDFLAGS  = -Os
 
-#�}�N��
-CC = mos-c64-clang.bat
+# 中間ファイル
+OBJS     = $(TARGET).o
 
-CFLAGS2 = -o $*.s -Wl,--lto-emit-asm
-CFLAGS = -Os -o $*.o -c
+# --- ルール ---
 
-#LINKOPTS = -Os
-#-noixemul
+all: $(TARGET).prg
 
-.SUFFIXES: .o .c
-.c.o:
-	$(CC) $(CFLAGS) $<
-#	$(CC) $(CFLAGS2) $<
-#	$(CC) -o $*.o $*.s.lto.s -c
+# 1. パターンルール (.c -> .o)
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-.SUFFIXES: .o .s
-.s.o:
-	$(CC) -o $*.o $*.s -c
+# 2. パターンルール (.s -> .o)
+%.o: %.s
+	$(CC) -c $< -o $@
 
-#�����菇
+# 3. リンク（.prg生成）
+$(TARGET).prg: $(OBJS)
+	$(CC) $(LDFLAGS) $^ -o $@
 
-all:$(TARGET).prg
+# --- 依存関係 ---
+$(TARGET).o: $(TARGET).c
 
 clean:
-	rm $(TARGET).prg $(TARGET).o
-
-OBJFILES = $(TARGET).o
-
-$(TARGET).prg : $(OBJFILES)
-	$(CC) $(LINKOPTS) $(OBJFILES) -o $(TARGET).prg
-
-#$(TARGET).o : $(TARGET).s
-$(TARGET).o : $(TARGET).c
+	rm -f *.o $(TARGET).prg
