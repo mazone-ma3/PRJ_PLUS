@@ -37,6 +37,10 @@ OpenWatcomでコンパイルしてください。実行には.SC5ファイルが
 
 z88dkでコンパイルしてください。直接.d88を生成します。
 
+・FM77AV版
+
+gcc6809(4.3.6branch)でコンパイルして下さい。直接.d77を生成します。メモリがギリギリなので不具合が出るかもしれません。
+
 実機での動作は今のところ未検証です。
 
 Pyxel版もWebの方にあります。
@@ -45,6 +49,7 @@ WebMSX:
 https://webmsx.org/cbios/?MACHINE=MSX1J&rom=https://github.com/mazone-ma3/PRJ_PLUS/raw/refs/heads/main/MSX1/BIN/plustakermsx.rom
 
 <img width="2880" height="1920" alt="タイトルなし_" src="https://github.com/user-attachments/assets/a100e02f-6d43-40f3-bba3-9aeeaf21ec40" />
+
 
 
 
