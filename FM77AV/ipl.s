@@ -7,7 +7,7 @@ size = 16000 ;22707
 Sector = 256
 count = (size+Sector-1)/Sector
 
-top=0x1000
+top=0x300
 ;top= 0x1600
 ;top= 0x2000
 

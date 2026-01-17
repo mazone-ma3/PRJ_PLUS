@@ -7,7 +7,7 @@ OBJCOPY = objcopy
 
 CFLAGS  = -c
 LIBPATH = /usr/local/lib/gcc/m6809-unknown-none/4.3.6/
-LDFLAGS = -b .text=0x1000 -s -l $(LIBPATH)libgcc.a
+LDFLAGS = -b .text=0x300 -s -l $(LIBPATH)libgcc.a
 
 # 生成される中間ファイルなどをまとめて定義
 OBJFILES = crt0.rel $(TARGET).rel
