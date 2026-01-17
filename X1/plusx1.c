@@ -818,7 +818,7 @@ void put_chr8_pcg(int x, int y, char chr, char atr) {
 void put_chr8(int x, int y, char chr, char atr) {
 	if((x < 0) || (y < 0))
 		return;
-	if((x > (SIZE-1)) || (y > ((200-1)/2)))
+	if((x >= (SIZE-1)) || (y >= ((200-1)/2)))
 		return;
 
 //	x+=(32/8)*2;
