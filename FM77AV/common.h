@@ -8,6 +8,7 @@ typedef struct {
 } Entity;
 
 #define vram_m(x, y) vram[(x) + (MAP_W+4) * (y)]
+//#define vram_m(x, y) vram[(x) * (MAP_H + 4) + (y)]
 
 // max/min マクロ
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
@@ -23,7 +24,7 @@ typedef struct {
 
 // 仮想VRAM
 //static char vram[MAP_W+4][MAP_H+4];
-char *vram;
+static char *vram;
 
 // グローバル変数
 char battle_msg[40];
@@ -304,11 +305,15 @@ void main2(void) {
 
 	vram = (char *)0x5400;
 
-	for(i = 0; i < MAP_H; ++i)
-		for(j = 0; j < MAP_W; ++j)
+	for(i = 0; i < MAP_H+4; ++i){
+		for(j = 0; j < MAP_W+4; ++j){
 //			vram[i][j]=0;
 			vram_m(i,j) = 0;
+		}
+	}
 
+	for(i = 0; i < 8; ++i)
+		end_sprite(i, -2, -2);
 	init_sprite(0,player.x, player.y,2,2);
 
 	for(i = 0; i < 640/8/2 ;++i)
