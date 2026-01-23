@@ -24,6 +24,9 @@ top=0x300
 ;cseg
 __start:
 ;	bra	__start
+;	lda	#1
+;	sta	0xfd0f		;ura RAM ON
+
 	lda #24
 	sta RQNO
 	ldx #RCB
