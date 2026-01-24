@@ -7,8 +7,9 @@ typedef struct {
 	unsigned char active;
 } Entity;
 
-#define vram_m(x, y) vram[(x) + (MAP_W+4) * (y)]
+//#define vram_m(x, y) vram[(x) + (MAP_W+4) * (y)]
 //#define vram_m(x, y) vram[(x) * (MAP_H + 4) + (y)]
+#define vram_m(x, y) vram_buffer[x][y]
 
 // max/min マクロ
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
@@ -23,7 +24,7 @@ typedef struct {
 #define MAP_H DEADLINE //200/4
 
 // 仮想VRAM
-//static char vram[MAP_W+4][MAP_H+4];
+static char vram_buffer[MAP_W+4][MAP_H+4];
 static char *vram;
 
 // グローバル変数
@@ -303,15 +304,16 @@ void se(void)
 void main2(void) {
 	int	i,j;
 
-	vram = (char *)0x5400;
-
+//	vram = (char *)0x5400;
+	vram = (char *)vram_buffer;
+/*
 	for(i = 0; i < MAP_H+4; ++i){
 		for(j = 0; j < MAP_W+4; ++j){
 //			vram[i][j]=0;
 			vram_m(i,j) = 0;
 		}
 	}
-
+*/
 	for(i = 0; i < 8; ++i)
 		end_sprite(i, -2, -2);
 	init_sprite(0,player.x, player.y,2,2);

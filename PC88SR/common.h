@@ -7,6 +7,9 @@ typedef struct {
 	unsigned char active;
 } Entity;
 
+//#define vram_m(x, y) vram[(x) + (MAP_W+4) * (y)]
+//#define vram_m(x, y) vram[(x) * (MAP_H + 4) + (y)]
+#define vram_m(x, y) vram_buffer[x][y]
 
 // max/min マクロ
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
@@ -18,10 +21,11 @@ typedef struct {
 
 // 定数
 #define MAP_W 640/8
-#define MAP_H 200/2
+#define MAP_H DEADLINE //200/4
 
 // 仮想VRAM
-static char vram[MAP_W+4][MAP_H+4];
+static char vram_buffer[MAP_W+4][MAP_H+4];
+static char *vram;
 
 // グローバル変数
 char battle_msg[40];
@@ -171,7 +175,8 @@ void set_map(int x, int y, unsigned char x_size, unsigned char y_size)
 //					if((x+i) <= MAP_W)
 //						if((y+j) <= MAP_H)
 //					if(!vram[x+i][y+j])
-							++vram[x+i][y+j];
+//							++vram[x+i][y+j];
+							++vram_m(x+i,y+j);
 }
 
 void reset_map(int x,int y, unsigned char x_size, unsigned char y_size)
@@ -184,10 +189,13 @@ void reset_map(int x,int y, unsigned char x_size, unsigned char y_size)
 //					if((x+i) <= MAP_W)
 //						if((y+j) <= MAP_H)
 //					if(vram[x+i][y+j])
-							if((vram[x+i][y+j] - 1)>=1){
-								--vram[x+i][y+j];
+//							if((vram[x+i][y+j] - 1)>=1){
+							if((vram_m(x+i, y+j) - 1)>=1){
+//								--vram[x+i][y+j];
+								--vram_m(x+i,y+j);
 							}else{
-								vram[x+i][y+j] = 0;
+//								vram[x+i][y+j] = 0;
+								vram_m(x+i,y+j) = 0;
 								erase_chr8(x-16/8+i*1, (y-16/4)*2+2*j);
 
 //							put_chr8(x-16/8+i*2, (y-16/4)*2+4*j, 16*2*1+3*2*0,0);
@@ -296,10 +304,18 @@ void se(void)
 void main2(void) {
 	int	i,j;
 
-	for(i = 0; i < MAP_H; ++i)
-		for(j = 0; j < MAP_W; ++j)
-			vram[i][j]=0;
-
+//	vram = (char *)0x5400;
+	vram = (char *)vram_buffer;
+/*
+	for(i = 0; i < MAP_H+4; ++i){
+		for(j = 0; j < MAP_W+4; ++j){
+//			vram[i][j]=0;
+			vram_m(i,j) = 0;
+		}
+	}
+*/
+	for(i = 0; i < 8; ++i)
+		end_sprite(i, -2, -2);
 	init_sprite(0,player.x, player.y,2,2);
 
 	for(i = 0; i < 640/8/2 ;++i)
