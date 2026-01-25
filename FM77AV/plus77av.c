@@ -66,22 +66,25 @@ unsigned char *vram_adr;
 
 unsigned char i, j;
 
-unsigned char *mmr;
-//unsigned char *vram;
-unsigned char *mem;
-unsigned char *msr;
-unsigned char msr_sv;
-unsigned char *keyport, key, st3 = 0;
-
 #define OPNCOM 0xFD15
 #define OPNDAT 0xFD16
 
-unsigned char *opncom;
-unsigned char *opndat;
+#define mmr (unsigned char *)0xFD80
+#define mem (unsigned char *)0x6AFF
+#define msr (unsigned char *)0xFD93;
+#define keyport (unsigned char *)0xFD01
+#define opncom (unsigned char *)OPNCOM
+#define opndat (unsigned char *)OPNDAT
+
+unsigned char msr_sv;
+unsigned char key, st3 = 0;
+
+//unsigned char *opncom;
+//unsigned char *opndat;
 
 void keyscan_on(void)
 {
-asm(
+asm volatile(
 	"jmp	_SCAN\n"
 "_SUBOUT:\n"
 	".byte	16\n"
@@ -103,7 +106,7 @@ asm(
 
 void keyscan_off(void)
 {
-asm(
+asm volatile(
 	"ldx	#_SUBOUT2\n"
 	"jsr [0xFBFA]\n"
 	"lda #0\n"
@@ -131,7 +134,7 @@ asm(
 
 void keyrepeat_on(void)
 {
-asm(
+asm volatile(
 	"jmp	_repeat\n"
 "_SUBOUT3:\n"
 	".byte	16\n"
@@ -153,7 +156,7 @@ asm(
 
 void keyrepeat_off(void)
 {
-asm(
+asm volatile(
 	"jmp	_repeat2\n"
 "_SUBOUT4:\n"
 	".byte	16\n"
@@ -174,7 +177,7 @@ asm(
 }
 
 
-unsigned char keycode2, keyflag;
+volatile unsigned char keycode2, keyflag;
 
 void  key_sense(void)
 {
@@ -218,7 +221,7 @@ void  key_sense(void)
 
 void set_key_irq(void)
 {
-asm(
+asm volatile(
 
 "_TINIT:\n"
 	"orcc	#0x10\n"
@@ -241,7 +244,7 @@ asm(
 
 void reset_key_irq(void)
 {
-asm(
+asm volatile(
 	"orcc	#0x10\n"
 	"ldx		_IRQJP\n"
 	"stx		0xFFF8\n"
@@ -274,7 +277,7 @@ asm(
 
 void sub_disable(void)
 {
-asm(
+asm volatile(
 "_SUBHLT:\n"
 	"lda	0xFD05\n"
 	"bmi	_SUBHLT\n"
@@ -287,7 +290,7 @@ asm(
 );
 
 //	msr_sv = *msr;
-asm(
+asm volatile(
 	"lda	0xfd93\n"
 	"sta	_msr_sv\n"
 	";ora	#0x80\n"
@@ -300,7 +303,7 @@ void sub_enable(void)
 {
 //	*msr = msr_sv;
 
-asm(
+asm volatile(
 	"lda	_msr_sv\n"
 	"sta	0xfd93\n"
 
@@ -315,7 +318,7 @@ asm(
 /*
 void bank1_on()
 {
-asm(
+asm volatile(
 	"lda	#0x1d\n"
 	"sta	0xfd8a\n"
 	"lda	#0\n"
@@ -330,7 +333,7 @@ asm(
 
 void bank1_off(void)
 {
-asm(
+asm volatile(
 	"lda	#0x1d\n"
 	"sta	0xfd8a\n"
 	"lda	#0\n"
@@ -344,7 +347,7 @@ asm(
 
 void vram_b_on(void)
 {
-asm(
+asm volatile(
 	"lda	#0x10\n"
 	"sta	0xfd8a\n"
 	"inca	\n"
@@ -362,7 +365,7 @@ asm(
 
 void vram_r_on(void)
 {
-asm(
+asm volatile(
 	"lda	#0x14\n"
 	"sta	0xfd8a\n"
 	"inca	\n"
@@ -380,7 +383,7 @@ asm(
 
 void vram_g_on(void)
 {
-asm(
+asm volatile(
 	"lda	#0x18\n"
 	"sta	0xfd8a\n"
 	"inca	\n"
@@ -398,7 +401,7 @@ asm(
 
 void vram_off(void)
 {
-asm(
+asm volatile(
 	"lda	#0x3a\n"
 	"sta	0xfd8a\n"
 	"inca	\n"
@@ -447,7 +450,7 @@ unsigned char subcpu_flag = 0;
 
 void sub_draw(void)
 {
-asm(
+asm volatile(
 	"lda	#0x3f\n"
 	"sta	0xfc82\n"
 	"lda	_subcpu_flag\n"
@@ -533,9 +536,9 @@ asm(
 /* メインRAM->VRAM 3プレーン転送(SUB CPU) */
 void put_sub2(char *patadr)
 {
-	register unsigned char *rx asm("x");
+	register unsigned char *rx asm ("x");
 
-asm(
+asm volatile(
 	"jsr	_SUBHLT1\n"
 );
 
@@ -545,7 +548,7 @@ asm(
 //	adr_tmp2 = (unsigned short *)(vram_adr);
 
 
-asm(
+asm volatile(
 //	"ldx	_adr_tmp\n"
 //	"ldx	_adr_tmp\n"
 	"ldy	#0xfcc8\n"
@@ -580,7 +583,7 @@ asm(
 
 void erase_chr77_pat(void)
 {
-asm(
+asm volatile(
 	"jsr	_SUBHLTE1\n"
 
 	"ldd	_vram_adr\n"
@@ -666,7 +669,7 @@ asm(
 
 void cursor_off(void)
 {
-asm(
+asm volatile(
 	"jsr	_SUBHLTC1\n"
 
 	"lda	#0x3f\n"
@@ -729,7 +732,7 @@ asm(
 
 void get_key(void)
 {
-asm(
+asm volatile(
 	"bra	key\n"
 "keyin:\n"
 	".byte	21\n"
@@ -876,9 +879,11 @@ void put_logo(int x, int y)
 	print_at_2(x, y+1, " 2026 bcdefgh");
 }
 */
+
+#define submode (unsigned char *)0xfd12
+
 void wait_vsync(void)
 {
-	unsigned char *submode = (unsigned char *)0xfd12;
 	while(!(*submode & 0x01));
 	while((*submode & 0x01)); /* WAIT VSYNC */
 }
@@ -902,7 +907,7 @@ void cls(void) {
 //	return;
 
 	sub_disable();
-asm(
+asm volatile(
 	"LDA	#0x02	; CLSコマンド ($02)\n"
 	"STA	0xFC82	; コマンド設定エリア\n"
 );
@@ -918,7 +923,7 @@ void play_sound_effect(void) {
 
 void set_se(void)
 {
-asm(
+asm volatile(
 	"orcc	#0x10\n"
 );
 	write_opn(6,127);
@@ -930,7 +935,7 @@ asm(
 	 // 00011100(8ch) PC-88/X1の場合 10011100(9ch) MSX/FM77AVの場合
 	write_opn(13,9);
 	write_opn(10,0x10);
-asm(
+asm volatile(
 	"andcc	#0xef\n"
 );
 }
@@ -957,13 +962,13 @@ unsigned char keyscan(void)
 {
 	keycode = 0;
 		/* ジョイスティック読み込み */
-asm(
+asm volatile(
 	"orcc	#0x10\n"
 );
 	write_opn(15, 0x2f);
 	st = ~read_opn(14);
 	st2 = st3;
-asm(
+asm volatile(
 	"andcc	#0xef\n"
 );
 	st2 = st3;
@@ -994,31 +999,24 @@ asm(
 
 int main(void)
 {
-/*asm(
+/*asm volatile(
 	"LDS  #0x7FFF    ; ハードウェアスタックを$7FFFに設定\n"
 	"LDU  #0x7F00\n"
 	"lda #1\n"
 	"sta 0xfd13\n	;サブモニタROMをAに"
 );
 */
-	mmr = (unsigned char *)0xFD80;
-	mem = (unsigned char *)0x6AFF;
-	msr = (unsigned char *)0xFD93;
-	keyport = (unsigned char *)0xFD01;
-
-	opncom = (unsigned char *)OPNCOM;
-	opndat = (unsigned char *)OPNDAT;
 	subcpu_flag = 0;
 
 	cursor_off();
 
 	/* ジョイスティック設定 */
-asm(
+asm volatile(
 	"orcc	#0x10\n"
 );
 	write_opn(15, 0x3f);
 	write_opn(7, 0xbf);
-asm(
+asm volatile(
 	"andcc	#0xef\n"
 );
 
