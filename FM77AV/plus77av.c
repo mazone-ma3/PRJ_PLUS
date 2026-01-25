@@ -879,8 +879,8 @@ void put_logo(int x, int y)
 void wait_vsync(void)
 {
 	unsigned char *submode = (unsigned char *)0xfd12;
-	while((*submode & 0x01)); /* WAIT VSYNC */
 	while(!(*submode & 0x01));
+	while((*submode & 0x01)); /* WAIT VSYNC */
 }
 
 // vsync

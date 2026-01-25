@@ -250,24 +250,21 @@ void set_sprite_pattern(int num, int no) {
 void set_sprite_all(void) {
 	char i, spr_count = 0;
 	for(i = 0; i < 8; ++i){
-//		VDP_put_sprite_16(spr_count++, spr_x[i],  spr_y[i], sprite_pattern_no[i], sprite_color_no[i][0]);
 		if((spr_x[i] != spr_x_new[i]) || (spr_y[i] != spr_y_new[i])){
 			set_map(spr_x_new[i], spr_y_new[i],spr_x_size[i]*2, spr_y_size[i]*2);
 		}
 	}
-//			if((spr_x[i] >=0) && (spr_y[i] >= 0))
 	for(i = 0; i < 8; ++i){
+		if((spr_x_new[i] >= 0) && (spr_y_new[i] >= 0)){
+			put_chr16(spr_x_new[i]-16/8, spr_y_new[i]-16/4, sprite_pattern_no[i],spr_x_size[i], spr_y_size[i]);
+		}
+//	}
+//	for(i = 0; i < 8; ++i){
 		if((spr_x[i] != spr_x_new[i]) || (spr_y[i] != spr_y_new[i])){
 			reset_map(spr_x[i], spr_y[i],spr_x_size[i]*2, spr_y_size[i]*2);
+			spr_x[i] = spr_x_new[i];
+			spr_y[i] = spr_y_new[i];
 		}
-	}
-//	for(i = 0; i < 8; ++i){
-//	}
-	for(i = 0; i < 8; ++i){
-		spr_x[i] = spr_x_new[i];
-		spr_y[i] = spr_y_new[i];
-		if((spr_x[i] >= 0) && (spr_y[i] >= 0))
-			put_chr16(spr_x[i]-16/8, spr_y[i]-16/4, sprite_pattern_no[i],spr_x_size[i], spr_y_size[i]);
 	}
 }
 
