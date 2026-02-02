@@ -27,6 +27,11 @@ __start:
 ;	lda	#1
 ;	sta	0xfd0f		;ura RAM ON
 
+	lda	#0x3b
+	sta	0x0		; break key cancel
+	ldd	#0x0
+	std	0xfff6
+
 	LDS  #0x7FFF	; ハードウェアスタックを$7FFFに設定\n
 	LDU  #0x7F00
 	lda #1
