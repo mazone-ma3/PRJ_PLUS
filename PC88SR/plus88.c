@@ -826,6 +826,9 @@ int main(void)
 	}
 */
 
+	if(!basic_mode){
+		pal_all(0, org_pal);
+	}
 	st = pd = 255;
 	outp(0x51,0x80);	/* Cursor Off */
 
