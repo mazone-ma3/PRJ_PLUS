@@ -170,13 +170,14 @@ loop2:
 	out(#0x35),a	; Access MAINRAM
 	in	a,(#0x32);
 	and #0xbf;
-	out(#0x32),a	; NOUSE ALU
 
+;	out(#0x32),a	; NOUSE ALU
+;	in	a,(#0x32)
 
-	LD C,#0x32
-	IN A,(C)
-	AND #0xef
-	OUT (C),A
+	push	af
+	res	4,a
+	out	(#0x32),a
+
 	XOR A
 	LD HL,#0x0f3c8
 loop3:
@@ -184,9 +185,10 @@ loop3:
 	INC HL
 	CP H
 	JR NZ,loop3
-	IN A,(C)
-	OR #0x10
-	OUT (C),A
+
+	pop	af
+	out(#0x32),a
+
 	EI
 __endasm;
 }
@@ -636,7 +638,7 @@ void set_se(void)
 	write_psg(11,0);
 	write_psg(12,15);
 	//  PC-8801ÇÃèÍçáA(bit6)/B(bit7)Ç∆Ç‡Ç…ì¸óÕ(0) MSXÇ≈ÇÕAÇÕì¸óÕ(0)BÇÕèoóÕ(1)
-	write_psg(7,0x8c);  // 00011100(8ch) PC-88ÇÃèÍçá 10011100(9ch) MSXÇÃèÍçá
+	write_psg(7,0x1c);  // 00011100(8ch) PC-88ÇÃèÍçá 10011100(9ch) MSXÇÃèÍçá
 	write_psg(13,9);
 	write_psg(10,0x10);
 	EI();
@@ -803,15 +805,14 @@ unsigned char keyscan(void)
 int main(void)
 {
 //	printf("sys=%x mode=%x\n",*sysport, inp(0x32));
-
-	Set_RAM_MODE();
+//	Set_RAM_MODE();
 
 //	outp(0x32, inp(0x32) | 0x20);	/* 512 colors */
 	basic_mode = inp(0x31) & 0x80;
 //	n88rom = (unsigned char *)0x79d7;
 //	Set_ROM_MODE();
 //	rom_mode = *n88rom;
-//	Set_RAM_MODE();
+	Set_RAM_MODE();
 
 	if(basic_mode)
 		outp(0x51, 0);	/* Text Off */
