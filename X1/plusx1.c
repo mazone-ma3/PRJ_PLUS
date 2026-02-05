@@ -1052,7 +1052,7 @@ void set_se(void)
 	write_psg(12,15);
 	//  PC-8801/X1‚Ìê‡A(bit6)/B(bit7)‚Æ‚à‚É“ü—Í(0)
 	// MSX/FM77AV‚Å‚ÍA‚Í“ü—Í(0)B‚Ío—Í(1)
-	write_psg(7,0x8c);
+	write_psg(7,0x1c);
 	 // 00011100(8ch) PC-88/X1‚Ìê‡ 10011100(9ch) MSX/FM77AV‚Ìê‡
 	write_psg(13,9);
 	write_psg(10,0x10);
