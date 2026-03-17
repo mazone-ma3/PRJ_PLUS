@@ -500,6 +500,8 @@ int main(void)
 //	vdp_put_sprite_16(0, 0,0, 0,15);
 //	vdp_put_sprite_16(1, 0,0, 4,10);
 
+	for(i = 0; i < 8; ++i)
+		vpoke(i + 8 * 'a', block[i]);
 
 	for(i = 0; i < 8; ++i){
 		VPOKE(0x2000 + 'a' / 8, 8 * 16 + 9);
