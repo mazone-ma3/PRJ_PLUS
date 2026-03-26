@@ -61,6 +61,7 @@ unsigned char vram_data[CHR_SIZE];
 #define CHR_Y 8
 
 unsigned char turbo = 0;
+unsigned char zmode = 0;
 
 //unsigned short vram_ofs;
 //unsigned char map_data[(X_SIZE+2) * 32];
@@ -936,6 +937,52 @@ void cls(void) {
 
 	DI();
 
+if(zmode){
+__asm
+	push	bc
+	push	af
+
+	ld	bc,#0x1fd0
+	ld	a,#0x10
+	out	(c),a
+
+	ld	bc,#0x1a03
+	ld	a,#0x0b
+	out	(c),a
+;	ld	a,#0x0a
+	dec	a
+	out	(c),a
+
+	ld	bc,0
+loop3:
+;	ld	a, #0x00	; color
+;	xor	a
+	out	(c),0
+	inc	bc
+	ld	a,b
+	cp	#0x40
+	jr	nz,loop3
+
+	in	a,(c)
+__endasm;
+
+	if(!(inp(0x1ff0) & 0x01)){
+//		set_hireso();
+		outp(0x1fd0, 0x03);
+	}else{
+		outp(0x1fd0, 0x00);
+	}
+
+/*	ld	bc,#0x1fd0
+	xor	a
+;	ld	a,#0x0
+	out	(c),a*/
+__asm
+	pop	af
+	pop	bc
+__endasm;
+}
+
 __asm
 	push	bc
 	push	af
@@ -949,18 +996,21 @@ __asm
 	ld	bc,0
 loop:
 ;	ld	a, 0	; color
+;	xor	a
 	out	(c),0
 	inc	bc
 	ld	a,b
 	cp	#0x40
 	jr	nz,loop
 
+	in	a,(c)
+
 	pop	af
 	pop	bc
 __endasm;
 
 //	chr = inp(0);
-	inp(0);
+//	inp(0);
 
 	for(j = 0; j < 25; ++j){
 		for(i = 0; i < 80; ++i){
@@ -1063,8 +1113,6 @@ void set_se(void)
 
 int main(void)
 {
-	unsigned char zmode = 0;
-
 	for(i = 0; i < 200; ++i){
 		y_table[i] = ((i / 8) * 80 + (i & 7) * 0x800);
 	}
