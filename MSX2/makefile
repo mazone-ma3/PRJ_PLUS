@@ -4,6 +4,7 @@ CC       = zcc
 
 # コンパイルオプション（SDCCを使用）
 CFLAGS   = +msx -compiler sdcc --opt-code-speed --sdcccall0
+# --reserve-regs-iy
 # リンクオプション（subtypeで切り替え）
 LDFLAGS  = +msx -create-app -lmsxbios
 #-lmath32 
